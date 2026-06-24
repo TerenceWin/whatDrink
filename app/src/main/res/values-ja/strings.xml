@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">What Drink?</string>
+
+    <!-- Bottom Nav -->
+    <string name="nav_home">ホーム</string>
+    <string name="nav_scan">スキャン</string>
+    <string name="nav_log">マイログ</string>
+    <string name="nav_profile">プロフィール</string>
+
+    <!-- Home -->
+    <string name="home_trending">トレンド</string>
+    <string name="home_new_releases">新発売</string>
+    <string name="home_search_hint">飲み物を検索…</string>
+
+    <!-- Scan -->
+    <string name="scan_title">バーコードをスキャン</string>
+    <string name="scan_instruction">バーコードにカメラを向けてください</string>
+    <string name="scan_not_found">飲み物が見つかりません。追加しますか？</string>
+    <string name="scan_permission_required">バーコードをスキャンするにはカメラの許可が必要です</string>
+
+    <!-- Drink Profile -->
+    <string name="drink_reviews">レビュー</string>
+    <string name="drink_write_review">レビューを書く</string>
+    <string name="drink_add_to_log">ログに追加</string>
+    <string name="drink_no_reviews">まだレビューがありません。最初のレビューを書きましょう！</string>
+
+    <!-- Log -->
+    <string name="log_title">マイ飲み物ログ</string>
+    <string name="log_empty">まだ飲み物が記録されていません。\nスキャンを始めましょう！</string>
+
+    <!-- Auth -->
+    <string name="sign_in_google">Googleでサインイン</string>
+    <string name="sign_out">サインアウト</string>
+
+    <!-- General -->
+    <string name="loading">読み込み中…</string>
+    <string name="error_generic">エラーが発生しました。もう一度お試しください。</string>
+    <string name="retry">再試行</string>
+</resources>

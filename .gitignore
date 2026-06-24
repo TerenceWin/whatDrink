@@ -1,0 +1,20 @@
+# Android
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Firebase — each dev downloads their own from Firebase Console
+google-services.json
+
+# Keystore files (never commit these)
+*.jks
+*.keystore
+
+# Environment
+*.env
