@@ -13,16 +13,19 @@ import com.whatdrink.app.ui.screens.log.LogScreen
 import com.whatdrink.app.ui.screens.profile.ProfileScreen
 import com.whatdrink.app.ui.screens.map.MapScreen
 import com.whatdrink.app.ui.screens.scan.BarcodeScannerScreen
-import com.whatdrink.app.ui.screens.scan.ScanScreen
 import com.whatdrink.app.ui.screens.drinkprofile.DrinkProfileScreen
+import com.whatdrink.app.util.normalizeBarcode
+import com.whatdrink.app.ui.screens.loading.LoadingScreen
 
 sealed class Screen(val route: String) {
     object Home : Screen("home")
-    object Scan : Screen("scan")
     object Log : Screen("log")
     object Profile : Screen("profile")
     object BarcodeScanner : Screen("barcode_scanner")
     object Map : Screen("map")
+    object Loading : Screen("loading/{barcode}"){
+        fun createRoute(barcode: String) = "loading/$barcode"
+    }
     object DrinkProfile : Screen("drink/{drinkId}") {
         fun createRoute(drinkId: String) = "drink/$drinkId"
     }
@@ -58,6 +61,9 @@ fun WhatDrinkNavHost() {
                     onOpenMap = {
                         navController.navigate(Screen.Map.route)
                     },
+                    onSearch = { barcode ->
+                        navController.navigate(Screen.Loading.createRoute(barcode))
+                    },
                     barcodeResult = barcodeResult
                 )
             }
@@ -65,11 +71,7 @@ fun WhatDrinkNavHost() {
                 BarcodeScannerScreen(
                     onBarcodeDetected = { barcode ->
                         // Normalize UPC-A (12 digits) to EAN-13 (13 digits) by padding leading 0
-                        val normalized = if (barcode.length == 12 && barcode.all { it.isDigit() }) {
-                            "0$barcode"
-                        } else {
-                            barcode
-                        }
+                        val normalized = normalizeBarcode(barcode)
                         navController.previousBackStackEntry
                             ?.savedStateHandle
                             ?.set("barcode_result", normalized)
@@ -80,11 +82,6 @@ fun WhatDrinkNavHost() {
             }
             composable(Screen.Map.route) {
                 MapScreen(onBack = { navController.popBackStack() })
-            }
-            composable(Screen.Scan.route) {
-                ScanScreen(onDrinkFound = { drinkId ->
-                    navController.navigate(Screen.DrinkProfile.createRoute(drinkId))
-                })
             }
             composable(Screen.Log.route) {
                 LogScreen(onDrinkClick = { drinkId ->
@@ -99,6 +96,18 @@ fun WhatDrinkNavHost() {
                 DrinkProfileScreen(
                     drinkId = drinkId,
                     onBack = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Loading.route){ backStackEntry ->
+                val barcode = backStackEntry.arguments?.getString("barcode") ?: return@composable
+                LoadingScreen(
+                    barcode = barcode,
+                    onDrinkFound = { drinkId ->
+                        navController.navigate(Screen.DrinkProfile.createRoute(drinkId))
+                    },
+                    onNotFound = {
+                        navController.popBackStack(Screen.Home.route, inclusive = false)
+                    }
                 )
             }
         }

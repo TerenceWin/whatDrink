@@ -34,7 +34,7 @@ data class AppStrings(
 
 val EnStrings = AppStrings(
     searchHint = "Search drinks...",
-    trending = "Trending",
+    trending = "Top 10 Drinks",
     newReleases = "New Releases",
     scanTitle = "Scan Barcode",
     scanInstruction = "Point your camera at the barcode",
@@ -55,7 +55,7 @@ val EnStrings = AppStrings(
 
 val JpStrings = AppStrings(
     searchHint = "飲み物を検索…",
-    trending = "トレンド",
+    trending = "トップ10ドリンク",
     newReleases = "新発売",
     scanTitle = "バーコードをスキャン",
     scanInstruction = "バーコードにカメラを向けてください",

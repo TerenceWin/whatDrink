@@ -9,7 +9,7 @@ data class Drink(
     val category: String = "",
     val description: Map<String, String> = emptyMap(),
     val averageRating: Double = 0.0,
-    val reviewCount: Int = 0,
-    val isNewRelease: Boolean = false,
-    val isTrending: Boolean = false,
+    val views: Int = 0,
+    val ranking: Int = 0,
+    val commentCount: Int = 0
 )

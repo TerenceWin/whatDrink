@@ -90,8 +90,60 @@ After launch:
 | 4 | Polish & testing |
 | 5 | Launch 🚀 |
 
+## Firestore Database Structure
+
+The app uses three Firestore collections. Each one has a distinct responsibility.
+
+### `drinkDetails`
+
+Stores the full profile of every drink in the database. This collection is queried when a user scans a barcode.
+
+| Field | Type | Description |
+|---|---|---|
+| `barcode` | String | EAN-13 barcode (13 digits, zero-padded). Used to look up the drink after a scan. |
+| `name` | Map | Localized drink name. Keys are language codes: `en`, `ja`. |
+| `brand` | String | The manufacturer or brand name (e.g. "Suntory", "Coca-Cola Japan"). |
+| `category` | String | Drink type (e.g. "Sports Drink", "Green Tea", "Energy Drink", "Soda", "Coffee"). |
+| `imageUrl` | String | URL to the drink's image stored in Firebase Storage. Empty string if no image yet. |
+| `source` | String | Where the data came from: `"firestore"` (manual), `"openfoodfacts"`, or `"deepseek"`. |
+| `description` | Map | Localized description of the drink. Keys are language codes: `en`, `ja`. |
+| `nutrition` | Map | Nutritional info per 100ml: `calories`, `protein`, `fat`, `carbohydrates`, `sugar`, `sodium`, `caffeine`. |
+
+---
+
+### `drinkStats`
+
+Stores live counters for each drink. Separated from `drinkDetails` so high-frequency writes (views, ratings) don't block reads of static drink info.
+
+| Field | Type | Description |
+|---|---|---|
+| `barcode` | String | EAN-13 barcode. Links this stat record to a drink in `drinkDetails`. |
+| `views` | Int64 | Total number of times this drink's profile has been viewed. |
+| `averageRating` | Double | Community star rating (1.0–5.0), recalculated whenever a new review is submitted. |
+| `commentCount` | Int64 | Total number of reviews submitted for this drink. |
+
+---
+
+### `drinks`
+
+Stores the pre-computed top 10 ranking cards shown on the home screen. This collection is written by an external Python script that runs every hour — the app only reads from it, never writes to it.
+
+| Field | Type | Description |
+|---|---|---|
+| `barcode` | String | EAN-13 barcode. Can be used to navigate to the full drink profile. |
+| `name` | Map | Localized drink name. Keys are language codes: `en`, `ja`. |
+| `brand` | String | Brand name, displayed on the card. |
+| `category` | String | Drink category, displayed as a tag on the card. |
+| `imageUrl` | String | URL to the drink's image, displayed as the card thumbnail. |
+| `ranking` | Int | Position in the top 10 (1 = most popular). |
+| `averageRating` | Double | Community star rating snapshot at the time of the last ranking recalculation. |
+
+---
+
 ## Getting Started
 
 1. Clone the repository
 2. Copy `app/google-services.json.example` to `app/google-services.json` and fill in your Firebase project credentials
 3. Open in Android Studio and run on a device or emulator (API 26+)
+
+
