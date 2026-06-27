@@ -1,26 +1,18 @@
 package com.whatdrink.app.ui
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.whatdrink.app.R
+import com.whatdrink.app.ui.language.AppLanguage
+import com.whatdrink.app.ui.language.LocalAppLanguage
+import com.whatdrink.app.ui.language.LocalSetLanguage
 import com.whatdrink.app.ui.screens.home.HomeScreen
 import com.whatdrink.app.ui.screens.log.LogScreen
 import com.whatdrink.app.ui.screens.profile.ProfileScreen
+import com.whatdrink.app.ui.screens.map.MapScreen
+import com.whatdrink.app.ui.screens.scan.BarcodeScannerScreen
 import com.whatdrink.app.ui.screens.scan.ScanScreen
 import com.whatdrink.app.ui.screens.drinkprofile.DrinkProfileScreen
 
@@ -29,6 +21,8 @@ sealed class Screen(val route: String) {
     object Scan : Screen("scan")
     object Log : Screen("log")
     object Profile : Screen("profile")
+    object BarcodeScanner : Screen("barcode_scanner")
+    object Map : Screen("map")
     object DrinkProfile : Screen("drink/{drinkId}") {
         fun createRoute(drinkId: String) = "drink/$drinkId"
     }
@@ -37,66 +31,55 @@ sealed class Screen(val route: String) {
 @Composable
 fun WhatDrinkNavHost() {
     val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
+    var currentLanguage by remember { mutableStateOf(AppLanguage.EN) }
 
-    val bottomNavScreens = listOf(Screen.Home, Screen.Scan, Screen.Log, Screen.Profile)
-    val showBottomBar = bottomNavScreens.any { it.route == currentDestination?.route }
-
-    Scaffold(
-        bottomBar = {
-            if (showBottomBar) {
-                NavigationBar {
-                    bottomNavScreens.forEach { screen ->
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    imageVector = when (screen) {
-                                        Screen.Home -> Icons.Filled.Home
-                                        Screen.Scan -> Icons.Filled.QrCodeScanner
-                                        Screen.Log -> Icons.Filled.List
-                                        Screen.Profile -> Icons.Filled.Person
-                                        else -> Icons.Filled.Home
-                                    },
-                                    contentDescription = null
-                                )
-                            },
-                            label = {
-                                Text(
-                                    stringResource(
-                                        when (screen) {
-                                            Screen.Home -> R.string.nav_home
-                                            Screen.Scan -> R.string.nav_scan
-                                            Screen.Log -> R.string.nav_log
-                                            Screen.Profile -> R.string.nav_profile
-                                            else -> R.string.nav_home
-                                        }
-                                    )
-                                )
-                            },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-        }
-    ) { innerPadding ->
+    CompositionLocalProvider(
+        LocalAppLanguage provides currentLanguage,
+        LocalSetLanguage provides { currentLanguage = it }
+    ) {
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier
         ) {
-            composable(Screen.Home.route) {
-                HomeScreen(onDrinkClick = { drinkId ->
-                    navController.navigate(Screen.DrinkProfile.createRoute(drinkId))
-                })
+            composable(Screen.Home.route) { backStackEntry ->
+                // Receive barcode result from scanner via savedStateHandle
+                val barcodeResult by backStackEntry.savedStateHandle
+                    .getStateFlow<String?>("barcode_result", null)
+                    .collectAsState()
+
+                HomeScreen(
+                    onDrinkClick = { drinkId ->
+                        navController.navigate(Screen.DrinkProfile.createRoute(drinkId))
+                    },
+                    onScanBarcode = {
+                        navController.navigate(Screen.BarcodeScanner.route)
+                    },
+                    onOpenMap = {
+                        navController.navigate(Screen.Map.route)
+                    },
+                    barcodeResult = barcodeResult
+                )
+            }
+            composable(Screen.BarcodeScanner.route) {
+                BarcodeScannerScreen(
+                    onBarcodeDetected = { barcode ->
+                        // Normalize UPC-A (12 digits) to EAN-13 (13 digits) by padding leading 0
+                        val normalized = if (barcode.length == 12 && barcode.all { it.isDigit() }) {
+                            "0$barcode"
+                        } else {
+                            barcode
+                        }
+                        navController.previousBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("barcode_result", normalized)
+                        navController.popBackStack()
+                    },
+                    onClose = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Map.route) {
+                MapScreen(onBack = { navController.popBackStack() })
             }
             composable(Screen.Scan.route) {
                 ScanScreen(onDrinkFound = { drinkId ->

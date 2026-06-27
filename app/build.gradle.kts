@@ -85,6 +85,7 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
 
     implementation(libs.coil.compose)
+    implementation(libs.osmdroid)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.junit)
