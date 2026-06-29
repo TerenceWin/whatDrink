@@ -19,20 +19,32 @@ def fetch_from_yahoo(barcode: str) -> dict:
         return {}
     item = hits[0]
     return {
-        "barcode": barcode,
-        "name": item.get("name", ""),
-        "brand": item.get("brand", {}).get("name", ""),
-        "price": item.get("price", 0),
-        "category": item.get("genreCategory", {}).get("name", ""),
-        "imageUrl": item.get("image", {}).get("medium", ""),
-        "description": item.get("description", ""),
-        "averageRating": 0.0,
-        "reviewCount": 0,
-        "likeCount": 0,
+    "barcode": barcode,
+    "name": {
+        "en": item.get("name", ""),
+        "ja": item.get("name", "")
+    },
+    "brand": item.get("brand", {}).get("name", ""),
+    "category": item.get("genreCategory", {}).get("name", ""),
+    "imageUrl": item.get("image", {}).get("medium", ""),
+    "source": "yahoo",
+    "description": {
+        "en": item.get("description", ""),
+        "ja": item.get("description", "")
+    },
+    "nutrition": {
+        "calories": 0,
+        "protein": 0.0,
+        "fat": 0.0,
+        "carbohydrates": 0.0,
+        "sugar": 0.0,
+        "sodium": 0.0,
+        "caffeine": 0.0
     }
+}
 
 def save_to_firestore(drink: dict):
-    db.collection("drinks").document(drink["barcode"]).set(drink)
+    db.collection("drinkDetails").document(drink["barcode"]).set(drink)
     print(f"successfully saved: {drink['name']}")
 
 if __name__ == "__main__":
