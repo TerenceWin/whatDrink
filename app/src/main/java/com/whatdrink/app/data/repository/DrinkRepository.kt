@@ -19,3 +19,4 @@ interface DrinkRepository {
     suspend fun addToLog(userId: String, drinkId: String)
     suspend fun removeFromLog(logEntryId: String)
 }
+
