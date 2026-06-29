@@ -1,17 +1,45 @@
 import requests
-from bs4 import BeautifulSoup
 import json
+import firebase_admin
+from firebase_admin import credentials, firestore
 
-def scrape_drink_info(url: str) -> dict:
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(url, headers=headers)
-    response.encoding = 'utf-8' 
-    soup = BeautifulSoup(response.text, "html.parser")
-    text = soup.get_text(separator="\n", strip=True)
-    return {"raw_text": text[:3000]}  # 先只取前3000字
 
-# 测试
+cred = credentials.Certificate("serviceAccount.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+YAHOO_APP_ID = "dmVyPTIwMjUwNyZpZD1BNEsyblFOQk11Jmhhc2g9WkRJeFlXSTVaRGswTTJZd1ptVmlZdw"
+
+def fetch_from_yahoo(barcode: str) -> dict:
+    url = f"https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid={YAHOO_APP_ID}&jan_code={barcode}&results=1"
+    response = requests.get(url)
+    data = response.json()
+    hits = data.get("hits", [])
+    if not hits:
+        return {}
+    item = hits[0]
+    return {
+        "barcode": barcode,
+        "name": item.get("name", ""),
+        "brand": item.get("brand", {}).get("name", ""),
+        "price": item.get("price", 0),
+        "category": item.get("genreCategory", {}).get("name", ""),
+        "imageUrl": item.get("image", {}).get("medium", ""),
+        "description": item.get("description", ""),
+        "averageRating": 0.0,
+        "reviewCount": 0,
+        "likeCount": 0,
+    }
+
+def save_to_firestore(drink: dict):
+    db.collection("drinks").document(drink["barcode"]).set(drink)
+    print(f"successfully saved: {drink['name']}")
+
 if __name__ == "__main__":
-    url = input("输入饮料网页URL: ")
-    result = scrape_drink_info(url)
-    print(result["raw_text"])
+    barcode = input("barcode: ")
+    drink = fetch_from_yahoo(barcode)
+    if drink:
+        print(json.dumps(drink, ensure_ascii=False, indent=2))
+        save_to_firestore(drink)
+    else:
+        print("didn't find the data")
