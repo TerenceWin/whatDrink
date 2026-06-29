@@ -13,22 +13,19 @@ import kotlinx.coroutines.tasks.await
 class FirebaseDrinkRepository : DrinkRepository {
 
     private val db = FirebaseFirestore.getInstance()
-    private val drinks = db.collection("drinks")
+    private val drinks = db.collection("drinkDetails")
     private val reviews = db.collection("reviews")
     private val logs = db.collection("drinkLog")
 
-    // 扫码查饮料
     override suspend fun getDrinkByBarcode(barcode: String): Drink? {
         val result = drinks.whereEqualTo("barcode", barcode).limit(1).get().await()
         return result.documents.firstOrNull()?.toObject(Drink::class.java)
     }
 
-    // 用ID查饮料
     override suspend fun getDrinkById(id: String): Drink? {
         return drinks.document(id).get().await().toObject(Drink::class.java)
     }
 
-    // 搜索饮料
     override suspend fun searchDrinks(query: String): List<Drink> {
         val result = drinks
             .orderBy("name")
@@ -38,7 +35,6 @@ class FirebaseDrinkRepository : DrinkRepository {
         return result.toObjects(Drink::class.java)
     }
 
-    // Ranking
     override fun getTrendingDrinks(): Flow<List<Drink>> = callbackFlow {
         val listener = drinks
             .orderBy("likeCount", Query.Direction.DESCENDING)
@@ -49,7 +45,6 @@ class FirebaseDrinkRepository : DrinkRepository {
         awaitClose { listener.remove() }
     }
 
-    // 新品
     override fun getNewReleaseDrinks(): Flow<List<Drink>> = callbackFlow {
         val listener = drinks
             .orderBy("firstScannedAt", Query.Direction.DESCENDING)
@@ -60,7 +55,6 @@ class FirebaseDrinkRepository : DrinkRepository {
         awaitClose { listener.remove() }
     }
 
-    // 读评论
     override fun getReviewsForDrink(drinkId: String): Flow<List<Review>> = callbackFlow {
         val listener = reviews
             .whereEqualTo("drinkId", drinkId)
@@ -71,7 +65,6 @@ class FirebaseDrinkRepository : DrinkRepository {
         awaitClose { listener.remove() }
     }
 
-    // 写评论 + 更新评分
     override suspend fun submitReview(review: Review) {
         reviews.add(review).await()
         val drinkRef = drinks.document(review.drinkId)
@@ -86,7 +79,6 @@ class FirebaseDrinkRepository : DrinkRepository {
         }.await()
     }
 
-    // 扫码记录 + likeCount+1
     override fun getLogForUser(userId: String): Flow<List<LogEntry>> = callbackFlow {
         val listener = logs
             .whereEqualTo("userId", userId)
@@ -104,7 +96,7 @@ class FirebaseDrinkRepository : DrinkRepository {
             "scannedAt" to com.google.firebase.Timestamp.now()
         )
         logs.add(log).await()
-        drinks.document(drinkId).update("likeCount", 
+        drinks.document(drinkId).update("likeCount",
             com.google.firebase.firestore.FieldValue.increment(1)).await()
     }
 
