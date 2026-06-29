@@ -103,4 +103,13 @@ class FirebaseDrinkRepository : DrinkRepository {
     override suspend fun removeFromLog(logEntryId: String) {
         logs.document(logEntryId).delete().await()
     }
+    suspend fun saveUser(userId: String, displayName: String, email: String) {
+    val user = hashMapOf(
+        "userId" to userId,
+        "displayName" to displayName,
+        "email" to email,
+        "createdAt" to com.google.firebase.Timestamp.now()
+    )
+    db.collection("users").document(userId).set(user).await()
+}
 }
