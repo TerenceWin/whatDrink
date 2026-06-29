@@ -18,6 +18,7 @@ google-services.json
 
 # Environment
 *.env
+serviceAccount.json
 
 # Local notes
 memory.txt
