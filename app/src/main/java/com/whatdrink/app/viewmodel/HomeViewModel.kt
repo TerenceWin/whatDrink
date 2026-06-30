@@ -33,8 +33,9 @@ class HomeViewModel @Inject constructor(
                     _uiState.value = HomeUiState.Error(e.message ?: "Failed to load drinks")
                 }
                 .collect { drinks ->
-                    Log.d("HomeViewModel", "Collected ${drinks.size} drinks → updating state")
-                    _uiState.value = HomeUiState.Success(drinks)
+                    Log.d("HomeViewModel", "Collected ${drinks.size} drinks, updating state")
+                    val imageUrls = drinks.associate { it.id to it.imageUrl.takeIf { url -> url.isNotBlank() } }
+                    _uiState.value = HomeUiState.Success(drinks, imageUrls)
                 }
         }
     }

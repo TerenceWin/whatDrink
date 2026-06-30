@@ -1,6 +1,7 @@
 package com.whatdrink.app.di
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import com.whatdrink.app.data.repository.DrinkRepository
 import com.whatdrink.app.data.repository.DrinkRepositoryImpl
 import dagger.Module
@@ -14,15 +15,16 @@ import javax.inject.Singleton
 object AppModule {
     @Provides
     @Singleton
-    fun provideFirestore(): FirebaseFirestore {
-        return FirebaseFirestore.getInstance()
-    }
+    fun provideFirestore(): FirebaseFirestore = FirebaseFirestore.getInstance()
+
+    @Provides
+    @Singleton
+    fun provideStorage(): FirebaseStorage = FirebaseStorage.getInstance()
 
     @Provides
     @Singleton
     fun provideDrinkRepository(
-        firestore: FirebaseFirestore
-    ): DrinkRepository {
-        return DrinkRepositoryImpl(firestore)
-    }
+        firestore: FirebaseFirestore,
+        storage: FirebaseStorage
+    ): DrinkRepository = DrinkRepositoryImpl(firestore, storage)
 }

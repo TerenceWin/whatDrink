@@ -228,5 +228,18 @@ def seed():
 
     print("\n✅ Done! All collections seeded.")
 
+def reset_stats():
+    print("Resetting drinkStats to zero...")
+    for stat in drink_stats:
+        db.collection("drinkStats").document(stat["barcode"]).update({
+            "averageRating": 0,
+            "commentCount": 0,
+            "views": 0,
+        })
+        print(f"  ✓ {stat['barcode']} reset")
+    print("\n✅ Done! All drinkStats reset to zero.")
+
 if __name__ == "__main__":
     seed()
+    # Uncomment to reset all stats to zero:
+    # reset_stats()

@@ -10,8 +10,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiFoodBeverage
 import androidx.compose.material.icons.filled.ImageSearch
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -42,6 +44,7 @@ fun HomeScreen(
     onDrinkClick: (String) -> Unit,
     onScanBarcode: () -> Unit = {},
     onOpenMap: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
     onSearch: (String) -> Unit = {},
     barcodeResult: String? = null,
     viewModel: HomeViewModel = hiltViewModel()
@@ -56,7 +59,7 @@ fun HomeScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.home_background),
+            painter = painterResource(id = R.drawable.drink_profile_background),
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
@@ -97,6 +100,7 @@ fun HomeScreen(
                 }
                 is HomeUiState.Success -> {
                     val drinks = (uiState as HomeUiState.Success).drinks
+                    val imageUrls = (uiState as HomeUiState.Success).imageUrls
                     Text(
                         text = strings.trending,
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
@@ -112,7 +116,11 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(drinks, key = { it.id }) { drink ->
-                            DrinkCard(drink = drink, onClick = { onDrinkClick(drink.id) })
+                            DrinkCard(
+                                drink = drink,
+                                imageUrl = imageUrls[drink.id],
+                                onClick = { onDrinkClick(drink.id) }
+                            )
                         }
                     }
                 }
@@ -127,26 +135,43 @@ fun HomeScreen(
                 .padding(start = 20.dp, bottom = 20.dp)
         )
 
-        IconButton(
-            onClick = onOpenMap,
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
-                .padding(end = 20.dp, bottom = 20.dp)
-                .background(Color.White, CircleShape)
-                .size(52.dp)
+                .padding(end = 20.dp, bottom = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Icon(
-                imageVector = Icons.Filled.Map,
-                contentDescription = "Find nearby stores",
-                tint = MaterialTheme.colorScheme.onSurface
-            )
+            IconButton(
+                onClick = onOpenMap,
+                modifier = Modifier
+                    .background(Color.White, CircleShape)
+                    .size(52.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Map,
+                    contentDescription = "Find nearby stores",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            IconButton(
+                onClick = onOpenProfile,
+                modifier = Modifier
+                    .background(Color.White, CircleShape)
+                    .size(52.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Person,
+                    contentDescription = "User profile",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun DrinkCard(drink: Drink, onClick: () -> Unit) {
+private fun DrinkCard(drink: Drink, imageUrl: String?, onClick: () -> Unit) {
     val lang = LocalAppLanguage.current
     val langKey = if (lang == AppLanguage.JP) "ja" else "en"
     val displayName = drink.name[langKey] ?: drink.name.values.firstOrNull() ?: drink.brand
@@ -163,20 +188,29 @@ private fun DrinkCard(drink: Drink, onClick: () -> Unit) {
             modifier = Modifier.padding(15.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val imageModel: Any? = when {
-                drink.imageUrl.isNotBlank() -> drink.imageUrl
-                drink.ranking == 2 -> R.drawable.pocari_sweat
-                else -> null
-            }
-            AsyncImage(
-                model = imageModel,
-                contentDescription = displayName,
-                contentScale = ContentScale.Crop,
+            Box(
                 modifier = Modifier
                     .size(95.dp)
                     .clip(RoundedCornerShape(13.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            )
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                if (imageUrl != null) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = displayName,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.EmojiFoodBeverage,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.width(15.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(

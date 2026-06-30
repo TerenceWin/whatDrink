@@ -2,9 +2,13 @@ package com.whatdrink.app.data.repository
 
 import android.util.Log
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.storage.FirebaseStorage
 import com.whatdrink.app.data.model.Drink
+import com.whatdrink.app.data.model.DrinkDetail
+import com.whatdrink.app.data.model.DrinkStats
 import com.whatdrink.app.data.model.LogEntry
 import com.whatdrink.app.data.model.Review
 import kotlinx.coroutines.channels.awaitClose
@@ -14,7 +18,8 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 class DrinkRepositoryImpl @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val storage: FirebaseStorage
 ) : DrinkRepository {
 
     private val reviews = firestore.collection("reviews")
@@ -32,6 +37,33 @@ class DrinkRepositoryImpl @Inject constructor(
 
     override suspend fun getDrinkById(id: String): Drink? {
         return firestore.collection("drinks").document(id).get().await().toDrink()
+    }
+
+    override suspend fun getDrinkDetail(id: String): DrinkDetail? {
+        val doc = firestore.collection("drinkDetails").document(id).get().await()
+        if (!doc.exists()) return null
+        return doc.toDrinkDetail()
+    }
+
+    override suspend fun getDrinkStats(id: String): DrinkStats? {
+        val doc = firestore.collection("drinkStats").document(id).get().await()
+        if (!doc.exists()) return null
+        return doc.toDrinkStats()
+    }
+
+    override suspend fun incrementViews(id: String) {
+        firestore.collection("drinkStats").document(id)
+            .update("views", FieldValue.increment(1))
+            .await()
+    }
+
+    override suspend fun getImageUrl(barcode: String): String? {
+        return try {
+            storage.reference.child("drinks/$barcode.webp").downloadUrl.await().toString()
+        } catch (e: Exception) {
+            Log.w("DrinkRepo", "Storage image not found for $barcode: ${e.message}")
+            null
+        }
     }
 
     override fun getTrendingDrinks(): Flow<List<Drink>> = callbackFlow {
@@ -125,7 +157,7 @@ class DrinkRepositoryImpl @Inject constructor(
         )
         logs.add(log).await()
         firestore.collection("drinks").document(drinkId)
-            .update("views", com.google.firebase.firestore.FieldValue.increment(1)).await()
+            .update("views", FieldValue.increment(1)).await()
     }
 
     override suspend fun removeFromLog(logEntryId: String) {
@@ -141,6 +173,26 @@ class DrinkRepositoryImpl @Inject constructor(
         )
         firestore.collection("users").document(userId).set(user).await()
     }
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun DocumentSnapshot.toDrinkStats(): DrinkStats {
+    return DrinkStats(
+        id = id,
+        averageRating = (get("averageRating") as? Number)?.toDouble() ?: 0.0,
+        views = getLong("views")?.toInt() ?: 0,
+        ranking = getLong("ranking")?.toInt() ?: 0,
+        commentCount = getLong("commentCount")?.toInt() ?: 0
+    )
+}
+
+@Suppress("UNCHECKED_CAST")
+private fun DocumentSnapshot.toDrinkDetail(): DrinkDetail {
+    return DrinkDetail(
+        id = id,
+        name = get("name") as? Map<String, String> ?: emptyMap(),
+        nutrition = get("nutrition") as? Map<String, Any> ?: emptyMap()
+    )
 }
 
 @Suppress("UNCHECKED_CAST")

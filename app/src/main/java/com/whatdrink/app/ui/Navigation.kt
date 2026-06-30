@@ -61,6 +61,9 @@ fun WhatDrinkNavHost() {
                     onOpenMap = {
                         navController.navigate(Screen.Map.route)
                     },
+                    onOpenProfile = {
+                        navController.navigate(Screen.Profile.route)
+                    },
                     onSearch = { barcode ->
                         navController.navigate(Screen.Loading.createRoute(barcode))
                     },
@@ -89,13 +92,17 @@ fun WhatDrinkNavHost() {
                 })
             }
             composable(Screen.Profile.route) {
-                ProfileScreen()
+                ProfileScreen(
+                    onGoHome = { navController.popBackStack(Screen.Home.route, inclusive = false) }
+                )
             }
             composable(Screen.DrinkProfile.route) { backStackEntry ->
                 val drinkId = backStackEntry.arguments?.getString("drinkId") ?: return@composable
                 DrinkProfileScreen(
                     drinkId = drinkId,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onGoHome = { navController.popBackStack(Screen.Home.route, inclusive = false) },
+                    onOpenProfile = { navController.navigate(Screen.Profile.route) }
                 )
             }
             composable(Screen.Loading.route){ backStackEntry ->

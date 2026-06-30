@@ -1,6 +1,8 @@
 package com.whatdrink.app.data.repository
 
 import com.whatdrink.app.data.model.Drink
+import com.whatdrink.app.data.model.DrinkDetail
+import com.whatdrink.app.data.model.DrinkStats
 import com.whatdrink.app.data.model.Review
 import com.whatdrink.app.data.model.LogEntry
 import kotlinx.coroutines.flow.Flow
@@ -8,6 +10,10 @@ import kotlinx.coroutines.flow.Flow
 interface DrinkRepository {
     suspend fun getDrinkByBarcode(barcode: String): Drink?
     suspend fun getDrinkById(id: String): Drink?
+    suspend fun getDrinkDetail(id: String): DrinkDetail?
+    suspend fun getDrinkStats(id: String): DrinkStats?
+    suspend fun incrementViews(id: String)
+    suspend fun getImageUrl(barcode: String): String?
     fun getTrendingDrinks(): Flow<List<Drink>>
     fun getNewReleaseDrinks(): Flow<List<Drink>>
     suspend fun searchDrinks(query: String): List<Drink>
