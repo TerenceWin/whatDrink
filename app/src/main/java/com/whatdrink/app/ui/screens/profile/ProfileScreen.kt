@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -137,14 +139,17 @@ private fun ProfileContent(
     onSignOut: () -> Unit
 ) {
     var editingUsername by remember { mutableStateOf(false) }
-    var usernameInput by remember(user.username) { mutableStateOf(user.username) }
+    var displayUsername by remember { mutableStateOf(user.username) }
+    var usernameInput by remember(displayUsername) { mutableStateOf(displayUsername) }
     val focusRequester = remember { FocusRequester() }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(horizontal = 35.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 35.dp)
+            .padding(bottom = 100.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.height(60.dp))
@@ -219,6 +224,7 @@ private fun ProfileContent(
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
+                        displayUsername = usernameInput
                         onUpdateUsername(usernameInput)
                         editingUsername = false
                     }),
@@ -227,13 +233,14 @@ private fun ProfileContent(
                         .focusRequester(focusRequester)
                 )
                 IconButton(onClick = {
+                    displayUsername = usernameInput
                     onUpdateUsername(usernameInput)
                     editingUsername = false
                 }) {
                     Icon(Icons.Filled.Check, contentDescription = "Save", tint = Color.Black)
                 }
                 IconButton(onClick = {
-                    usernameInput = user.username
+                    usernameInput = displayUsername
                     editingUsername = false
                 }) {
                     Icon(Icons.Filled.Close, contentDescription = "Cancel", tint = Color.Black)
@@ -245,7 +252,7 @@ private fun ProfileContent(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = user.username,
+                    text = displayUsername,
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
                     color = Color.Black
                 )
@@ -320,7 +327,10 @@ private fun ProfileContent(
                 InfoRow(
                     label = if (lang == AppLanguage.JP) "登録日" else "Member since",
                     value = user.memberSince?.toDate()?.let {
-                        SimpleDateFormat("MMMM yyyy", Locale.ENGLISH).format(it)
+                        if (lang == AppLanguage.JP)
+                            SimpleDateFormat("yyyy年M月", Locale.JAPANESE).format(it)
+                        else
+                            SimpleDateFormat("MMMM yyyy", Locale.ENGLISH).format(it)
                     } ?: "—"
                 )
             }

@@ -10,6 +10,7 @@ import com.whatdrink.app.data.model.Drink
 import com.whatdrink.app.data.model.DrinkDetail
 import com.whatdrink.app.data.model.DrinkStats
 import com.whatdrink.app.data.model.LogEntry
+import com.whatdrink.app.data.model.Comment
 import com.whatdrink.app.data.model.Review
 import com.whatdrink.app.data.model.User
 import kotlinx.coroutines.channels.awaitClose
@@ -102,7 +103,9 @@ class DrinkRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDrinkById(id: String): Drink? {
-        return drinkDetails.document(id).get().await().toDrink()
+        val doc = drinkDetails.document(id).get().await()
+        if (!doc.exists()) return null
+        return doc.toDrink()
     }
 
     override suspend fun getDrinkDetail(id: String): DrinkDetail? {
@@ -260,10 +263,95 @@ class DrinkRepositoryImpl @Inject constructor(
             .await()
     }
 
+    override fun getComments(drinkId: String): Flow<List<Comment>> = callbackFlow {
+        val listener = firestore.collection("drinkDetails").document(drinkId)
+            .collection("comments")
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, _ ->
+                val comments = snapshot?.documents?.mapNotNull { doc ->
+                    Comment(
+                        commentId = doc.id,
+                        userId = doc.getString("userId") ?: "",
+                        username = doc.getString("username") ?: "",
+                        context = doc.getString("context") ?: "",
+                        createdAt = doc.getTimestamp("createdAt")
+                    )
+                } ?: emptyList()
+                trySend(comments)
+            }
+        awaitClose { listener.remove() }
+    }
+
+    override suspend fun addComment(drinkId: String, userId: String, username: String, context: String) {
+        val timestamp = com.google.firebase.Timestamp.now()
+        val commentId = firestore.collection("allComments").document().id
+
+        val drinkComment = mapOf(
+            "commentId" to commentId,
+            "userId" to userId,
+            "username" to username,
+            "context" to context,
+            "createdAt" to timestamp
+        )
+        val globalComment = mapOf(
+            "commentId" to commentId,
+            "userId" to userId,
+            "username" to username,
+            "context" to context,
+            "createdAt" to timestamp,
+            "drinkId" to drinkId
+        )
+
+        firestore.collection("drinkDetails").document(drinkId)
+            .collection("comments").document(commentId)
+            .set(drinkComment).await()
+
+        firestore.collection("allComments").document(commentId)
+            .set(globalComment).await()
+    }
+
     override suspend fun updateUsername(userId: String, newUsername: String) {
         firestore.collection("users").document(userId)
             .update("username", newUsername)
             .await()
+        Log.d("DrinkRepo", "updateUsername: users doc updated")
+
+        val userComments = firestore.collection("allComments")
+            .whereEqualTo("userId", userId)
+            .get()
+            .await()
+
+        Log.d("DrinkRepo", "updateUsername: found ${userComments.size()} comments to update")
+        if (userComments.isEmpty) return
+
+        val usernameMap = mapOf("username" to newUsername)
+        val mergeOptions = com.google.firebase.firestore.SetOptions.merge()
+
+        val batch = firestore.batch()
+        userComments.documents.forEach { doc ->
+            val commentId = doc.getString("commentId") ?: doc.id
+            val drinkId   = doc.getString("drinkId")   ?: return@forEach
+
+            Log.d("DrinkRepo", "updateUsername: batching commentId=$commentId drinkId=$drinkId")
+            batch.set(
+                firestore.collection("allComments").document(commentId),
+                usernameMap,
+                mergeOptions
+            )
+            batch.set(
+                firestore.collection("drinkDetails").document(drinkId)
+                    .collection("comments").document(commentId),
+                usernameMap,
+                mergeOptions
+            )
+        }
+        try {
+            batch.commit().await()
+            Log.d("DrinkRepo", "updateUsername: batch committed")
+        } catch (e: Exception) {
+            Log.e("DrinkRepo", "updateUsername: batch FAILED: ${e.message}")
+            throw e
+        }
     }
 
     override suspend fun saveUser(userId: String, username: String, email: String) {

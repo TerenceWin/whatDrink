@@ -61,7 +61,6 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun loadProfileImages() {
-        if (_pickerImages.value.isNotEmpty()) return
         viewModelScope.launch {
             try {
                 val gsUrls = repository.getProfileImages()
@@ -99,15 +98,18 @@ class ProfileViewModel @Inject constructor(
         val uid = auth.currentUser?.uid ?: return
         val trimmed = newUsername.trim()
         if (trimmed.isBlank()) return
+
+        val previous = _uiState.value
+        if (previous is ProfileUiState.Success) {
+            _uiState.value = previous.copy(user = previous.user.copy(username = trimmed))
+        }
+
         viewModelScope.launch {
             try {
                 repository.updateUsername(uid, trimmed)
-                val current = _uiState.value
-                if (current is ProfileUiState.Success) {
-                    _uiState.value = current.copy(user = current.user.copy(username = trimmed))
-                }
             } catch (e: Exception) {
                 Log.e("ProfileViewModel", "Failed to update username: ${e.message}")
+                _uiState.value = previous
             }
         }
     }

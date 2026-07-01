@@ -1,9 +1,12 @@
 package com.whatdrink.app.ui.screens.drinkprofile
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -19,30 +22,40 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.whatdrink.app.R
+import com.whatdrink.app.data.model.Comment
 import com.whatdrink.app.data.model.DrinkDetail
 import com.whatdrink.app.data.model.DrinkStats
-import com.whatdrink.app.ui.language.AppLanguage
-import com.whatdrink.app.ui.language.LocalAppLanguage
 import com.whatdrink.app.ui.components.BottomBar
 import com.whatdrink.app.ui.components.BottomBarTab
+import com.whatdrink.app.ui.language.AppLanguage
+import com.whatdrink.app.ui.language.LocalAppLanguage
 import com.whatdrink.app.viewmodel.DrinkProfileUiState
 import com.whatdrink.app.viewmodel.DrinkProfileViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun DrinkProfileScreen(
     drinkId: String,
     onBack: () -> Unit,
     onOpenMap: () -> Unit = {},
     onGoHome: () -> Unit = {},
     onOpenProfile: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
     viewModel: DrinkProfileViewModel = hiltViewModel()
 ) {
     LaunchedEffect(drinkId) { viewModel.load(drinkId) }
 
     val uiState by viewModel.uiState.collectAsState()
+    val comments by viewModel.comments.collectAsState()
+    val isPostingComment by viewModel.isPostingComment.collectAsState()
+    var showCommentSheet by remember { mutableStateOf(false) }
+    var commentText by remember { mutableStateOf("") }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -51,49 +64,110 @@ fun DrinkProfileScreen(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color.Transparent
-        ) {
-            when (val state = uiState) {
-                is DrinkProfileUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.weight(1f)) {
+                when (val state = uiState) {
+                    is DrinkProfileUiState.Loading -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
+                    is DrinkProfileUiState.Success -> DrinkProfileContent(
+                        detail = state.detail,
+                        stats = state.stats,
+                        imageUrl = state.imageUrl,
+                        comments = comments,
+                        onCommentClick = {
+                            if (viewModel.isLoggedIn) showCommentSheet = true
+                            else onNavigateToLogin()
+                        }
+                    )
+                    is DrinkProfileUiState.NotFound -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Drink not found")
+                        }
+                    }
+                    is DrinkProfileUiState.Error -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Error: ${state.message}")
+                        }
                     }
                 }
-                is DrinkProfileUiState.Success -> DrinkProfileContent(state.detail, state.stats, state.imageUrl)
-                is DrinkProfileUiState.NotFound -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Drink not found")
-                    }
-                }
-                is DrinkProfileUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Error: ${state.message}")
+            }
+            BottomBar(
+                activeTab = BottomBarTab.NONE,
+                onOpenMap = onOpenMap,
+                onGoHome = onGoHome,
+                onOpenProfile = onOpenProfile
+            )
+        }
+
+        if (showCommentSheet) {
+            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+            ModalBottomSheet(
+                onDismissRequest = { showCommentSheet = false },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = 32.dp)
+                ) {
+                    Text(
+                        text = "Add Comment",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = commentText,
+                        onValueChange = { commentText = it },
+                        placeholder = { Text("Write your comment...") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        maxLines = 5
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            viewModel.postComment(commentText) { onNavigateToLogin() }
+                            commentText = ""
+                            showCommentSheet = false
+                        },
+                        enabled = commentText.isNotBlank() && !isPostingComment,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        if (isPostingComment) CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                        else Text("Post")
                     }
                 }
             }
         }
-
-        BottomBar(
-            activeTab = BottomBarTab.NONE,
-            onOpenMap = onOpenMap,
-            onGoHome = onGoHome,
-            onOpenProfile = onOpenProfile,
-            modifier = Modifier.align(Alignment.BottomStart)
-        )
     }
 }
 
 @Composable
-private fun DrinkProfileContent(detail: DrinkDetail, stats: DrinkStats, imageUrl: String?) {
+private fun DrinkProfileContent(
+    detail: DrinkDetail,
+    stats: DrinkStats,
+    imageUrl: String?,
+    comments: List<Comment>,
+    onCommentClick: () -> Unit
+) {
     val lang = LocalAppLanguage.current
     val langKey = if (lang == AppLanguage.JP) "ja" else "en"
     val displayName = detail.name[langKey] ?: detail.name.values.firstOrNull() ?: detail.id
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -103,7 +177,7 @@ private fun DrinkProfileContent(detail: DrinkDetail, stats: DrinkStats, imageUrl
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 35.dp)
+                .padding(horizontal = 35.dp, vertical = 10.dp)
                 .height(250.dp)
                 .clip(RoundedCornerShape(20.dp))
                 .background(Color.White),
@@ -114,7 +188,11 @@ private fun DrinkProfileContent(detail: DrinkDetail, stats: DrinkStats, imageUrl
                     model = imageUrl,
                     contentDescription = displayName,
                     contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(vertical = 5.dp),
+                    onError = { Log.e("DrinkProfile", "Image load error: ${it.result.throwable}") },
+                    onSuccess = { Log.d("DrinkProfile", "Image loaded OK") }
                 )
             } else {
                 Icon(
@@ -169,12 +247,6 @@ private fun DrinkProfileContent(detail: DrinkDetail, stats: DrinkStats, imageUrl
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = if (lang == AppLanguage.JP) "${stats.commentCount} レビュー" else "${stats.commentCount} reviews",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
 
             // Nutrition section
@@ -223,12 +295,57 @@ private fun DrinkProfileContent(detail: DrinkDetail, stats: DrinkStats, imageUrl
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                Text(
-                    text = if (lang == AppLanguage.JP) "コメント" else "Comments",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.White,
+                    shadowElevation = 2.dp
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = if (lang == AppLanguage.JP) "コメント (${comments.size})" else "Comments (${comments.size})",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                        if (comments.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            comments.forEach { comment ->
+                                CommentCard(comment = comment)
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .clickable { },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Star,
+                                    contentDescription = if (lang == AppLanguage.JP) "評価" else "Rating",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            TextButton(onClick = onCommentClick) {
+                                Text(text = if (lang == AppLanguage.JP) "コメント" else "Comment")
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -245,6 +362,42 @@ private fun nutritionLabel(key: String, lang: AppLanguage): String {
         "sodium"        -> if (jp) "ナトリウム" else "Sodium"
         "caffeine"      -> if (jp) "カフェイン" else "Caffeine"
         else            -> key.replaceFirstChar { it.uppercase() }
+    }
+}
+
+@Composable
+private fun CommentCard(comment: Comment) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFF5F5F5),
+        shadowElevation = 0.dp
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = comment.username.ifBlank { "Anonymous" },
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+                comment.createdAt?.toDate()?.let {
+                    Text(
+                        text = SimpleDateFormat("MMM d, yyyy", Locale.ENGLISH).format(it),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = comment.context,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
     }
 }
 

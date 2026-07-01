@@ -158,6 +158,9 @@ fun WhatDrinkNavHost() {
                         } else {
                             navController.navigate(Screen.Login.route) { launchSingleTop = true }
                         }
+                    },
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.Login.route) { launchSingleTop = true }
                     }
                 )
             }

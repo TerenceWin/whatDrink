@@ -161,8 +161,10 @@ private fun DrinkCard(drink: Drink, imageUrl: String?, onClick: () -> Unit) {
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = displayName,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(vertical = 5.dp),
                         onError = { Log.e("DrinkCard", "Image load failed for $imageUrl: ${it.result.throwable}") }
                     )
                 } else {

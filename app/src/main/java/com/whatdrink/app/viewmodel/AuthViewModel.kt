@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.whatdrink.app.data.model.AuthState
 import com.whatdrink.app.data.repository.DrinkRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,8 +36,12 @@ class AuthViewModel @Inject constructor(
             try {
                 auth.signInWithEmailAndPassword(email, password).await()
                 _authState.value = AuthState.Success
+            } catch (e: FirebaseAuthInvalidCredentialsException) {
+                _authState.value = AuthState.Error("Incorrect email or password")
+            } catch (e: FirebaseAuthInvalidUserException) {
+                _authState.value = AuthState.Error("Incorrect email or password")
             } catch (e: Exception) {
-                _authState.value = AuthState.Error(e.message ?: "Login failed")
+                _authState.value = AuthState.Error("Login failed. Please try again")
             }
         }
     }

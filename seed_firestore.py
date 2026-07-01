@@ -16,7 +16,7 @@ drink_details = [
         "brand": "Otsuka Pharmaceutical",
         "category": "Sports Drink",
         "volume": "900ml",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4987035332510.webp",
         "source": "firestore",
         "description": {
             "en": "A mild isotonic drink that replenishes water and electrolytes.",
@@ -33,7 +33,7 @@ drink_details = [
         "name": {"en": "Aquarius", "ja": "アクエリアス"},
         "brand": "Coca-Cola Japan",
         "category": "Sports Drink",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4902102113342.jpg",
         "source": "firestore",
         "description": {
             "en": "A refreshing sports drink with citrus flavor.",
@@ -50,7 +50,7 @@ drink_details = [
         "name": {"en": "Oronamin C", "ja": "オロナミンC"},
         "brand": "Otsuka Pharmaceutical",
         "category": "Energy Drink",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901085616124.png",
         "source": "firestore",
         "description": {
             "en": "A vitamin C enriched carbonated energy drink.",
@@ -67,7 +67,7 @@ drink_details = [
         "name": {"en": "Georgia Coffee Original", "ja": "ジョージア オリジナル"},
         "brand": "Coca-Cola Japan",
         "category": "Coffee",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4902102072946.jpg",
         "source": "firestore",
         "description": {
             "en": "Japan's most popular canned coffee with a rich, sweet taste.",
@@ -84,7 +84,7 @@ drink_details = [
         "name": {"en": "Kirin Lemon", "ja": "キリンレモン"},
         "brand": "Kirin",
         "category": "Soda",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901777317420.jpg",
         "source": "firestore",
         "description": {
             "en": "A classic Japanese lemon soda with a crisp refreshing taste.",
@@ -101,7 +101,7 @@ drink_details = [
         "name": {"en": "Suntory Green Tea Iyemon", "ja": "伊右衛門"},
         "brand": "Suntory",
         "category": "Green Tea",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901085616636.jpg",
         "source": "firestore",
         "description": {
             "en": "A premium green tea brewed with quality Japanese tea leaves.",
@@ -118,7 +118,7 @@ drink_details = [
         "name": {"en": "Ayataka Green Tea", "ja": "綾鷹"},
         "brand": "Coca-Cola Japan",
         "category": "Green Tea",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4902102141239.jpg",
         "source": "firestore",
         "description": {
             "en": "A rich Japanese green tea with a slightly cloudy appearance.",
@@ -135,7 +135,7 @@ drink_details = [
         "name": {"en": "Real Gold", "ja": "リアルゴールド"},
         "brand": "Coca-Cola Japan",
         "category": "Energy Drink",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4902102072359.jpg",
         "source": "firestore",
         "description": {
             "en": "A long-standing Japanese energy drink with a citrus kick.",
@@ -152,7 +152,7 @@ drink_details = [
         "name": {"en": "C.C. Lemon", "ja": "C.C.レモン"},
         "brand": "Suntory",
         "category": "Soda",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901777034693.jpg",
         "source": "firestore",
         "description": {
             "en": "A vitamin C packed lemon carbonated drink with 70 lemons worth of vitamin C.",
@@ -169,7 +169,7 @@ drink_details = [
         "name": {"en": "Dakara", "ja": "DAKARA"},
         "brand": "Suntory",
         "category": "Sports Drink",
-        "imageUrl": "",
+        "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901085615004.jpg",
         "source": "firestore",
         "description": {
             "en": "A health-conscious sports drink designed to reset your body.",
@@ -199,16 +199,16 @@ drink_stats = [
 
 # ── Top 10 ranking for homepage ──
 drinks_ranking = [
-    {"barcode": "4902102072946", "name": {"en": "Georgia Coffee Original", "ja": "ジョージア オリジナル"}, "brand": "Coca-Cola Japan", "category": "Coffee",       "imageUrl": "", "ranking": 1,  "averageRating": 4.7},
-    {"barcode": "4987035332510", "name": {"en": "Pocari Sweat",            "ja": "ポカリスエット"},       "brand": "Otsuka",          "category": "Sports Drink", "volume": "900ml", "imageUrl": "", "ranking": 2,  "averageRating": 4.5},
-    {"barcode": "4901777034693", "name": {"en": "C.C. Lemon",              "ja": "C.C.レモン"},           "brand": "Suntory",         "category": "Soda",         "imageUrl": "", "ranking": 3,  "averageRating": 4.4},
-    {"barcode": "4901085616636", "name": {"en": "Suntory Green Tea Iyemon","ja": "伊右衛門"},             "brand": "Suntory",         "category": "Green Tea",    "imageUrl": "", "ranking": 4,  "averageRating": 4.3},
-    {"barcode": "4902102113342", "name": {"en": "Aquarius",                "ja": "アクエリアス"},         "brand": "Coca-Cola Japan", "category": "Sports Drink", "imageUrl": "", "ranking": 5,  "averageRating": 4.2},
-    {"barcode": "4902102141239", "name": {"en": "Ayataka Green Tea",       "ja": "綾鷹"},                 "brand": "Coca-Cola Japan", "category": "Green Tea",    "imageUrl": "", "ranking": 6,  "averageRating": 4.1},
-    {"barcode": "4901085616124", "name": {"en": "Oronamin C",              "ja": "オロナミンC"},          "brand": "Otsuka",          "category": "Energy Drink", "imageUrl": "", "ranking": 7,  "averageRating": 4.0},
-    {"barcode": "4901085615004", "name": {"en": "Dakara",                  "ja": "DAKARA"},               "brand": "Suntory",         "category": "Sports Drink", "imageUrl": "", "ranking": 8,  "averageRating": 3.9},
-    {"barcode": "4901777317420", "name": {"en": "Kirin Lemon",             "ja": "キリンレモン"},         "brand": "Kirin",           "category": "Soda",         "imageUrl": "", "ranking": 9,  "averageRating": 3.8},
-    {"barcode": "4902102072359", "name": {"en": "Real Gold",               "ja": "リアルゴールド"},       "brand": "Coca-Cola Japan", "category": "Energy Drink", "imageUrl": "", "ranking": 10, "averageRating": 3.6},
+    {"barcode": "4902102072946", "name": {"en": "Georgia Coffee Original", "ja": "ジョージア オリジナル"}, "brand": "Coca-Cola Japan", "category": "Coffee",       "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4902102072946.jpg", "ranking": 1,  "averageRating": 4.7},
+    {"barcode": "4987035332510", "name": {"en": "Pocari Sweat",            "ja": "ポカリスエット"},       "brand": "Otsuka",          "category": "Sports Drink", "volume": "900ml", "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4987035332510.webp", "ranking": 2,  "averageRating": 4.5},
+    {"barcode": "4901777034693", "name": {"en": "C.C. Lemon",              "ja": "C.C.レモン"},           "brand": "Suntory",         "category": "Soda",         "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901777034693.jpg", "ranking": 3,  "averageRating": 4.4},
+    {"barcode": "4901085616636", "name": {"en": "Suntory Green Tea Iyemon","ja": "伊右衛門"},             "brand": "Suntory",         "category": "Green Tea",    "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901085616636.jpg", "ranking": 4,  "averageRating": 4.3},
+    {"barcode": "4902102113342", "name": {"en": "Aquarius",                "ja": "アクエリアス"},         "brand": "Coca-Cola Japan", "category": "Sports Drink", "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4902102113342.jpg", "ranking": 5,  "averageRating": 4.2},
+    {"barcode": "4902102141239", "name": {"en": "Ayataka Green Tea",       "ja": "綾鷹"},                 "brand": "Coca-Cola Japan", "category": "Green Tea",    "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4902102141239.jpg", "ranking": 6,  "averageRating": 4.1},
+    {"barcode": "4901085616124", "name": {"en": "Oronamin C",              "ja": "オロナミンC"},          "brand": "Otsuka",          "category": "Energy Drink", "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901085616124.png", "ranking": 7,  "averageRating": 4.0},
+    {"barcode": "4901085615004", "name": {"en": "Dakara",                  "ja": "DAKARA"},               "brand": "Suntory",         "category": "Sports Drink", "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901085615004.jpg", "ranking": 8,  "averageRating": 3.9},
+    {"barcode": "4901777317420", "name": {"en": "Kirin Lemon",             "ja": "キリンレモン"},         "brand": "Kirin",           "category": "Soda",         "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4901777317420.jpg", "ranking": 9,  "averageRating": 3.8},
+    {"barcode": "4902102072359", "name": {"en": "Real Gold",               "ja": "リアルゴールド"},       "brand": "Coca-Cola Japan", "category": "Energy Drink", "imageUrl": "gs://whatdrinkdb.firebasestorage.app/drinks/4902102072359.jpg", "ranking": 10, "averageRating": 3.6},
 ]
 
 def seed():

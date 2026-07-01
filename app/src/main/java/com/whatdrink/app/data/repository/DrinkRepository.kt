@@ -3,6 +3,7 @@ package com.whatdrink.app.data.repository
 import com.whatdrink.app.data.model.Drink
 import com.whatdrink.app.data.model.DrinkDetail
 import com.whatdrink.app.data.model.DrinkStats
+import com.whatdrink.app.data.model.Comment
 import com.whatdrink.app.data.model.Review
 import com.whatdrink.app.data.model.LogEntry
 import com.whatdrink.app.data.model.User
@@ -28,6 +29,8 @@ interface DrinkRepository {
     suspend fun saveUser(userId: String, username: String, email: String)
     suspend fun getUser(userId: String): User?
     suspend fun updateUsername(userId: String, newUsername: String)
+    fun getComments(drinkId: String): Flow<List<Comment>>
+    suspend fun addComment(drinkId: String, userId: String, username: String, context: String)
     suspend fun getProfileImages(): List<String>
     suspend fun updateProfileImage(userId: String, gsUrl: String)
 }
