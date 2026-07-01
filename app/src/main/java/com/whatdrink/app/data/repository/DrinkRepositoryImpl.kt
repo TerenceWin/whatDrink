@@ -278,6 +278,13 @@ class DrinkRepositoryImpl @Inject constructor(
         )
         firestore.collection("users").document(userId).set(user).await()
     }
+    suspend fun getReviewsByUser(userId: String): List<Review> {
+    return reviews
+        .whereEqualTo("userId", userId)
+        .orderBy("timestamp", Query.Direction.DESCENDING)
+        .get().await()
+        .toObjects(Review::class.java)
+}
 }
 
 @Suppress("UNCHECKED_CAST")
