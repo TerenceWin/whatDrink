@@ -1,5 +1,6 @@
 package com.whatdrink.app.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -57,9 +58,10 @@ class AuthViewModel @Inject constructor(
             try {
                 val result = auth.createUserWithEmailAndPassword(email, password).await()
                 val uid = result.user?.uid ?: throw Exception("User creation failed")
-                repository.saveUser(uid, username, email)
+                repository.saveUser(userId = uid, username = username, email = email)
                 _authState.value = AuthState.Success
             } catch (e: Exception) {
+                Log.e("AuthViewModel", "Registration failed: ${e.message}", e)
                 _authState.value = AuthState.Error(e.message ?: "Registration failed")
             }
         }

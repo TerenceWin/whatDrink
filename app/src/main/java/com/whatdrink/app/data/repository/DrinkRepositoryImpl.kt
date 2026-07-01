@@ -11,6 +11,7 @@ import com.whatdrink.app.data.model.DrinkDetail
 import com.whatdrink.app.data.model.DrinkStats
 import com.whatdrink.app.data.model.LogEntry
 import com.whatdrink.app.data.model.Review
+import com.whatdrink.app.data.model.User
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -233,12 +234,47 @@ class DrinkRepositoryImpl @Inject constructor(
         logs.document(logEntryId).delete().await()
     }
 
-    override suspend fun saveUser(userId: String, displayName: String, email: String) {
+    override suspend fun getUser(userId: String): User? {
+        val doc = firestore.collection("users").document(userId).get().await()
+        if (!doc.exists()) return null
+        return User(
+            id = doc.getString("id") ?: userId,
+            username = doc.getString("username") ?: "",
+            email = doc.getString("email") ?: "",
+            memberSince = doc.getTimestamp("memberSince"),
+            reviewsCount = doc.getLong("reviewsCount")?.toInt() ?: 0,
+            ratingCount = doc.getLong("ratingCount")?.toInt() ?: 0,
+            profileImage = doc.getString("profileImage") ?: ""
+        )
+    }
+
+    override suspend fun getProfileImages(): List<String> {
+        val bucket = storage.app.options.storageBucket ?: return emptyList()
+        val result = storage.reference.child("profile").listAll().await()
+        return result.items.map { item -> "gs://$bucket${item.path}" }
+    }
+
+    override suspend fun updateProfileImage(userId: String, gsUrl: String) {
+        firestore.collection("users").document(userId)
+            .update("profileImage", gsUrl)
+            .await()
+    }
+
+    override suspend fun updateUsername(userId: String, newUsername: String) {
+        firestore.collection("users").document(userId)
+            .update("username", newUsername)
+            .await()
+    }
+
+    override suspend fun saveUser(userId: String, username: String, email: String) {
         val user = hashMapOf(
-            "userId" to userId,
-            "displayName" to displayName,
+            "id" to userId,
+            "username" to username,
             "email" to email,
-            "createdAt" to com.google.firebase.Timestamp.now()
+            "memberSince" to com.google.firebase.Timestamp.now(),
+            "reviewsCount" to 0,
+            "ratingCount" to 0,
+            "profileImage" to "gs://whatdrinkdb.firebasestorage.app/profile/monster1.jpeg"
         )
         firestore.collection("users").document(userId).set(user).await()
     }

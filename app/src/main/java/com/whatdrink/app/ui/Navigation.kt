@@ -134,7 +134,13 @@ fun WhatDrinkNavHost() {
             }
             composable(Screen.Profile.route) {
                 ProfileScreen(
-                    onGoHome = { navController.popBackStack(Screen.Home.route, inclusive = false) }
+                    onGoHome = { navController.popBackStack(Screen.Home.route, inclusive = false) },
+                    onOpenMap = { navController.navigate(Screen.Map.route) { launchSingleTop = true } },
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Profile.route) { inclusive = true }
+                        }
+                    }
                 )
             }
             composable(Screen.DrinkProfile.route) { backStackEntry ->

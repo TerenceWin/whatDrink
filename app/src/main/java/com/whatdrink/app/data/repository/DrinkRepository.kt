@@ -5,6 +5,7 @@ import com.whatdrink.app.data.model.DrinkDetail
 import com.whatdrink.app.data.model.DrinkStats
 import com.whatdrink.app.data.model.Review
 import com.whatdrink.app.data.model.LogEntry
+import com.whatdrink.app.data.model.User
 import kotlinx.coroutines.flow.Flow
 
 interface DrinkRepository {
@@ -24,6 +25,10 @@ interface DrinkRepository {
     fun getLogForUser(userId: String): Flow<List<LogEntry>>
     suspend fun addToLog(userId: String, drinkId: String)
     suspend fun removeFromLog(logEntryId: String)
-    suspend fun saveUser(userId: String, displayName: String, email: String)
+    suspend fun saveUser(userId: String, username: String, email: String)
+    suspend fun getUser(userId: String): User?
+    suspend fun updateUsername(userId: String, newUsername: String)
+    suspend fun getProfileImages(): List<String>
+    suspend fun updateProfileImage(userId: String, gsUrl: String)
 }
 

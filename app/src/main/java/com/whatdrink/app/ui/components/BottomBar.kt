@@ -3,6 +3,7 @@ package com.whatdrink.app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.shadow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
@@ -72,6 +73,7 @@ private fun BottomBarButton(
     IconButton(
         onClick = onClick,
         modifier = Modifier
+            .shadow(elevation = 4.dp, shape = CircleShape)
             .background(
                 color = if (active) MaterialTheme.colorScheme.primary else Color.White,
                 shape = CircleShape
