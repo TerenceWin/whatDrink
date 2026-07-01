@@ -13,7 +13,7 @@ interface DrinkRepository {
     suspend fun getDrinkDetail(id: String): DrinkDetail?
     suspend fun getDrinkStats(id: String): DrinkStats?
     suspend fun incrementViews(id: String)
-    suspend fun getImageUrl(barcode: String): String?
+    suspend fun getImageUrl(barcodeOrGsUrl: String): String?
     fun getTrendingDrinks(): Flow<List<Drink>>
     fun getNewReleaseDrinks(): Flow<List<Drink>>
     suspend fun searchDrinks(query: String): List<Drink>
@@ -24,5 +24,6 @@ interface DrinkRepository {
     fun getLogForUser(userId: String): Flow<List<LogEntry>>
     suspend fun addToLog(userId: String, drinkId: String)
     suspend fun removeFromLog(logEntryId: String)
+    suspend fun saveUser(userId: String, displayName: String, email: String)
 }
 

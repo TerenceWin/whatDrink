@@ -22,19 +22,36 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.whatdrink.app.R
+import com.whatdrink.app.data.model.AuthState
+import com.whatdrink.app.ui.components.BottomBar
+import com.whatdrink.app.ui.components.BottomBarTab
 import com.whatdrink.app.ui.language.AppLanguage
 import com.whatdrink.app.ui.language.LocalAppLanguage
+import com.whatdrink.app.viewmodel.AuthViewModel
 
 @Composable
 fun LoginScreen(
-    onLoginClick: () -> Unit = {},
-    onNavigateToRegister: () -> Unit = {}
+    onLoginSuccess: () -> Unit = {},
+    onNavigateToRegister: () -> Unit = {},
+    onOpenMap: () -> Unit = {},
+    onGoHome: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val lang = LocalAppLanguage.current
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    val authState by viewModel.authState.collectAsState()
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            viewModel.resetState()
+            onLoginSuccess()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -56,7 +73,7 @@ fun LoginScreen(
             Text(
                 text = if (lang == AppLanguage.JP) "ログイン" else "Log In",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White
+                color = Color.Black
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -64,22 +81,17 @@ fun LoginScreen(
             Text(
                 text = if (lang == AppLanguage.JP) "アカウントにサインイン" else "Sign in to your account",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.8f)
+                color = Color.Black.copy(alpha = 0.8f)
             )
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Email field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(if (lang == AppLanguage.JP) "メールアドレス" else "Email")
-                },
-                leadingIcon = {
-                    Icon(Icons.Filled.Email, contentDescription = null)
-                },
+                label = { Text(if (lang == AppLanguage.JP) "メールアドレス" else "Email") },
+                leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
@@ -93,17 +105,12 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Password field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(if (lang == AppLanguage.JP) "パスワード" else "Password")
-                },
-                leadingIcon = {
-                    Icon(Icons.Filled.Lock, contentDescription = null)
-                },
+                label = { Text(if (lang == AppLanguage.JP) "パスワード" else "Password") },
+                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
@@ -124,35 +131,60 @@ fun LoginScreen(
                 )
             )
 
+            if (authState is AuthState.Error) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = (authState as AuthState.Error).message,
+                    color = Color(0xFFFF6B6B),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Log In button
             Button(
-                onClick = onLoginClick,
+                onClick = { viewModel.login(email, password) },
+                enabled = authState !is AuthState.Loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text(
-                    text = if (lang == AppLanguage.JP) "ログイン" else "Log In",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                if (authState is AuthState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = if (lang == AppLanguage.JP) "ログイン" else "Log In",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Navigate to Register
             TextButton(onClick = onNavigateToRegister) {
                 Text(
-                    text = if (lang == AppLanguage.JP) "アカウントをお持ちでないですか？ 登録する" else "Don't have an account? Register",
-                    color = Color.White,
+                    text = if (lang == AppLanguage.JP) "登録する" else "Don't have an account? Register",
+                    color = Color.Black,
                     fontSize = 14.sp
                 )
             }
         }
+
+        BottomBar(
+            activeTab = BottomBarTab.PROFILE,
+            onOpenMap = onOpenMap,
+            onGoHome = onGoHome,
+            onOpenProfile = onOpenProfile,
+            modifier = Modifier.align(Alignment.BottomStart)
+        )
     }
 }

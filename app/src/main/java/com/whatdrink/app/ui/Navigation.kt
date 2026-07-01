@@ -5,9 +5,12 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import com.whatdrink.app.ui.language.AppLanguage
 import com.whatdrink.app.ui.language.LocalAppLanguage
 import com.whatdrink.app.ui.language.LocalSetLanguage
+import com.whatdrink.app.ui.screens.auth.LoginScreen
+import com.whatdrink.app.ui.screens.auth.RegisterScreen
 import com.whatdrink.app.ui.screens.home.HomeScreen
 import com.whatdrink.app.ui.screens.log.LogScreen
 import com.whatdrink.app.ui.screens.profile.ProfileScreen
@@ -21,9 +24,11 @@ sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Log : Screen("log")
     object Profile : Screen("profile")
+    object Login : Screen("login")
+    object Register : Screen("register")
     object BarcodeScanner : Screen("barcode_scanner")
     object Map : Screen("map")
-    object Loading : Screen("loading/{barcode}"){
+    object Loading : Screen("loading/{barcode}") {
         fun createRoute(barcode: String) = "loading/$barcode"
     }
     object DrinkProfile : Screen("drink/{drinkId}") {
@@ -45,12 +50,7 @@ fun WhatDrinkNavHost() {
             startDestination = Screen.Home.route,
             modifier = Modifier
         ) {
-            composable(Screen.Home.route) { backStackEntry ->
-                // Receive barcode result from scanner via savedStateHandle
-                val barcodeResult by backStackEntry.savedStateHandle
-                    .getStateFlow<String?>("barcode_result", null)
-                    .collectAsState()
-
+            composable(Screen.Home.route) {
                 HomeScreen(
                     onDrinkClick = { drinkId ->
                         navController.navigate(Screen.DrinkProfile.createRoute(drinkId))
@@ -59,26 +59,67 @@ fun WhatDrinkNavHost() {
                         navController.navigate(Screen.BarcodeScanner.route)
                     },
                     onOpenMap = {
-                        navController.navigate(Screen.Map.route)
+                        navController.navigate(Screen.Map.route) { launchSingleTop = true }
                     },
                     onOpenProfile = {
-                        navController.navigate(Screen.Profile.route)
+                        if (FirebaseAuth.getInstance().currentUser != null) {
+                            navController.navigate(Screen.Profile.route) { launchSingleTop = true }
+                        } else {
+                            navController.navigate(Screen.Login.route) { launchSingleTop = true }
+                        }
                     },
                     onSearch = { barcode ->
                         navController.navigate(Screen.Loading.createRoute(barcode))
+                    }
+                )
+            }
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(Screen.Profile.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
                     },
-                    barcodeResult = barcodeResult
+                    onNavigateToRegister = {
+                        navController.navigate(Screen.Register.route) { launchSingleTop = true }
+                    },
+                    onOpenMap = {
+                        navController.navigate(Screen.Map.route) { launchSingleTop = true }
+                    },
+                    onGoHome = {
+                        navController.popBackStack(Screen.Home.route, inclusive = false)
+                    },
+                    onOpenProfile = {}
+                )
+            }
+            composable(Screen.Register.route) {
+                RegisterScreen(
+                    onRegisterSuccess = {
+                        navController.navigate(Screen.Profile.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToLogin = {
+                        navController.popBackStack()
+                    },
+                    onOpenMap = {
+                        navController.navigate(Screen.Map.route) { launchSingleTop = true }
+                    },
+                    onGoHome = {
+                        navController.popBackStack(Screen.Home.route, inclusive = false)
+                    },
+                    onOpenProfile = {
+                        navController.navigate(Screen.Login.route) { launchSingleTop = true }
+                    }
                 )
             }
             composable(Screen.BarcodeScanner.route) {
                 BarcodeScannerScreen(
                     onBarcodeDetected = { barcode ->
-                        // Normalize UPC-A (12 digits) to EAN-13 (13 digits) by padding leading 0
                         val normalized = normalizeBarcode(barcode)
-                        navController.previousBackStackEntry
-                            ?.savedStateHandle
-                            ?.set("barcode_result", normalized)
-                        navController.popBackStack()
+                        navController.navigate(Screen.Loading.createRoute(normalized)) {
+                            popUpTo(Screen.Home.route)
+                        }
                     },
                     onClose = { navController.popBackStack() }
                 )
@@ -101,11 +142,20 @@ fun WhatDrinkNavHost() {
                 DrinkProfileScreen(
                     drinkId = drinkId,
                     onBack = { navController.popBackStack() },
+                    onOpenMap = {
+                        navController.navigate(Screen.Map.route) { launchSingleTop = true }
+                    },
                     onGoHome = { navController.popBackStack(Screen.Home.route, inclusive = false) },
-                    onOpenProfile = { navController.navigate(Screen.Profile.route) }
+                    onOpenProfile = {
+                        if (FirebaseAuth.getInstance().currentUser != null) {
+                            navController.navigate(Screen.Profile.route) { launchSingleTop = true }
+                        } else {
+                            navController.navigate(Screen.Login.route) { launchSingleTop = true }
+                        }
+                    }
                 )
             }
-            composable(Screen.Loading.route){ backStackEntry ->
+            composable(Screen.Loading.route) { backStackEntry ->
                 val barcode = backStackEntry.arguments?.getString("barcode") ?: return@composable
                 LoadingScreen(
                     barcode = barcode,

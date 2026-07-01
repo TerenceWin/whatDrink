@@ -25,14 +25,23 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.whatdrink.app.R
+import com.whatdrink.app.data.model.AuthState
+import com.whatdrink.app.ui.components.BottomBar
+import com.whatdrink.app.ui.components.BottomBarTab
 import com.whatdrink.app.ui.language.AppLanguage
 import com.whatdrink.app.ui.language.LocalAppLanguage
+import com.whatdrink.app.viewmodel.AuthViewModel
 
 @Composable
 fun RegisterScreen(
-    onRegisterClick: () -> Unit = {},
-    onNavigateToLogin: () -> Unit = {}
+    onRegisterSuccess: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
+    onOpenMap: () -> Unit = {},
+    onGoHome: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val lang = LocalAppLanguage.current
     var username by remember { mutableStateOf("") }
@@ -41,6 +50,14 @@ fun RegisterScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    val authState by viewModel.authState.collectAsState()
+
+    LaunchedEffect(authState) {
+        if (authState is AuthState.Success) {
+            viewModel.resetState()
+            onRegisterSuccess()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -63,7 +80,7 @@ fun RegisterScreen(
             Text(
                 text = if (lang == AppLanguage.JP) "アカウント登録" else "Create Account",
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = Color.White
+                color = Color.Black
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -71,22 +88,17 @@ fun RegisterScreen(
             Text(
                 text = if (lang == AppLanguage.JP) "新しいアカウントを作成する" else "Sign up to get started",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.8f)
+                color = Color.Black.copy(alpha = 0.8f)
             )
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Username field
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(if (lang == AppLanguage.JP) "ユーザー名" else "Username")
-                },
-                leadingIcon = {
-                    Icon(Icons.Filled.Person, contentDescription = null)
-                },
+                label = { Text(if (lang == AppLanguage.JP) "ユーザー名" else "Username") },
+                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -99,17 +111,12 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Email field
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(if (lang == AppLanguage.JP) "メールアドレス" else "Email")
-                },
-                leadingIcon = {
-                    Icon(Icons.Filled.Email, contentDescription = null)
-                },
+                label = { Text(if (lang == AppLanguage.JP) "メールアドレス" else "Email") },
+                leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
@@ -123,17 +130,12 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Password field
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(if (lang == AppLanguage.JP) "パスワード" else "Password")
-                },
-                leadingIcon = {
-                    Icon(Icons.Filled.Lock, contentDescription = null)
-                },
+                label = { Text(if (lang == AppLanguage.JP) "パスワード" else "Password") },
+                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
@@ -156,17 +158,12 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Confirm password field
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text(if (lang == AppLanguage.JP) "パスワード確認" else "Confirm Password")
-                },
-                leadingIcon = {
-                    Icon(Icons.Filled.Lock, contentDescription = null)
-                },
+                label = { Text(if (lang == AppLanguage.JP) "パスワード確認" else "Confirm Password") },
+                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                 trailingIcon = {
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                         Icon(
@@ -187,37 +184,62 @@ fun RegisterScreen(
                 )
             )
 
+            if (authState is AuthState.Error) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = (authState as AuthState.Error).message,
+                    color = Color(0xFFFF6B6B),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+            }
+
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Register button
             Button(
-                onClick = onRegisterClick,
+                onClick = { viewModel.register(username, email, password, confirmPassword) },
+                enabled = authState !is AuthState.Loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text(
-                    text = if (lang == AppLanguage.JP) "登録する" else "Register",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                if (authState is AuthState.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = if (lang == AppLanguage.JP) "登録する" else "Register",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Navigate to Login
             TextButton(onClick = onNavigateToLogin) {
                 Text(
                     text = if (lang == AppLanguage.JP) "すでにアカウントをお持ちですか？ ログイン" else "Already have an account? Log In",
-                    color = Color.White,
+                    color = Color.Black,
                     fontSize = 14.sp
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
+
+        BottomBar(
+            activeTab = BottomBarTab.PROFILE,
+            onOpenMap = onOpenMap,
+            onGoHome = onGoHome,
+            onOpenProfile = onOpenProfile,
+            modifier = Modifier.align(Alignment.BottomStart)
+        )
     }
 }

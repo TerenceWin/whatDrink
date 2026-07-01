@@ -1,19 +1,19 @@
 package com.whatdrink.app.ui.screens.home
 
+import android.util.Log
+import com.whatdrink.app.ui.components.BottomBar
+import com.whatdrink.app.ui.components.BottomBarTab
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiFoodBeverage
 import androidx.compose.material.icons.filled.ImageSearch
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -46,16 +46,11 @@ fun HomeScreen(
     onOpenMap: () -> Unit = {},
     onOpenProfile: () -> Unit = {},
     onSearch: (String) -> Unit = {},
-    barcodeResult: String? = null,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     var searchQuery by remember { mutableStateOf("") }
     val strings = LocalAppLanguage.current.strings
     val uiState by viewModel.uiState.collectAsState()
-
-    LaunchedEffect(barcodeResult) {
-        if (barcodeResult != null) searchQuery = barcodeResult
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -127,46 +122,13 @@ fun HomeScreen(
             }
         }
 
-        // Declared after Column so they render on top (higher z-order)
-        LanguageSelector(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .navigationBarsPadding()
-                .padding(start = 20.dp, bottom = 20.dp)
+        BottomBar(
+            activeTab = BottomBarTab.HOME,
+            onOpenMap = onOpenMap,
+            onGoHome = {},
+            onOpenProfile = onOpenProfile,
+            modifier = Modifier.align(Alignment.BottomStart)
         )
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(end = 20.dp, bottom = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            IconButton(
-                onClick = onOpenMap,
-                modifier = Modifier
-                    .background(Color.White, CircleShape)
-                    .size(52.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Map,
-                    contentDescription = "Find nearby stores",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            IconButton(
-                onClick = onOpenProfile,
-                modifier = Modifier
-                    .background(Color.White, CircleShape)
-                    .size(52.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = "User profile",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
     }
 }
 
@@ -200,7 +162,8 @@ private fun DrinkCard(drink: Drink, imageUrl: String?, onClick: () -> Unit) {
                         model = imageUrl,
                         contentDescription = displayName,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        onError = { Log.e("DrinkCard", "Image load failed for $imageUrl: ${it.result.throwable}") }
                     )
                 } else {
                     Icon(

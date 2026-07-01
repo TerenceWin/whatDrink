@@ -11,10 +11,11 @@ db = firestore.client()
 # ── Test drinks for drinkDetails collection (barcode scan results) ──
 drink_details = [
     {
-        "barcode": "4901085167572",
+        "barcode": "4987035332510",
         "name": {"en": "Pocari Sweat", "ja": "ポカリスエット"},
         "brand": "Otsuka Pharmaceutical",
         "category": "Sports Drink",
+        "volume": "900ml",
         "imageUrl": "",
         "source": "firestore",
         "description": {
@@ -184,22 +185,22 @@ drink_details = [
 
 # ── Test data for drinkStats collection ──
 drink_stats = [
-    {"barcode": "4901085167572", "views": 9800, "averageRating": 4.5, "commentCount": 312},
-    {"barcode": "4902102113342", "views": 8700, "averageRating": 4.2, "commentCount": 245},
-    {"barcode": "4901085616124", "views": 7600, "averageRating": 4.0, "commentCount": 198},
-    {"barcode": "4902102072946", "views": 9200, "averageRating": 4.7, "commentCount": 401},
-    {"barcode": "4901777317420", "views": 6500, "averageRating": 3.8, "commentCount": 134},
-    {"barcode": "4901085616636", "views": 7100, "averageRating": 4.3, "commentCount": 210},
-    {"barcode": "4902102141239", "views": 6900, "averageRating": 4.1, "commentCount": 178},
-    {"barcode": "4902102072359", "views": 5800, "averageRating": 3.6, "commentCount": 98},
-    {"barcode": "4901777034693", "views": 8100, "averageRating": 4.4, "commentCount": 267},
-    {"barcode": "4901085615004", "views": 5200, "averageRating": 3.9, "commentCount": 112},
+    {"barcode": "4987035332510", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4902102113342", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4901085616124", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4902102072946", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4901777317420", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4901085616636", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4902102141239", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4902102072359", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4901777034693", "views": 0, "averageRating": 0, "commentCount": 0},
+    {"barcode": "4901085615004", "views": 0, "averageRating": 0, "commentCount": 0},
 ]
 
 # ── Top 10 ranking for homepage ──
 drinks_ranking = [
     {"barcode": "4902102072946", "name": {"en": "Georgia Coffee Original", "ja": "ジョージア オリジナル"}, "brand": "Coca-Cola Japan", "category": "Coffee",       "imageUrl": "", "ranking": 1,  "averageRating": 4.7},
-    {"barcode": "4901085167572", "name": {"en": "Pocari Sweat",            "ja": "ポカリスエット"},       "brand": "Otsuka",          "category": "Sports Drink", "imageUrl": "", "ranking": 2,  "averageRating": 4.5},
+    {"barcode": "4987035332510", "name": {"en": "Pocari Sweat",            "ja": "ポカリスエット"},       "brand": "Otsuka",          "category": "Sports Drink", "volume": "900ml", "imageUrl": "", "ranking": 2,  "averageRating": 4.5},
     {"barcode": "4901777034693", "name": {"en": "C.C. Lemon",              "ja": "C.C.レモン"},           "brand": "Suntory",         "category": "Soda",         "imageUrl": "", "ranking": 3,  "averageRating": 4.4},
     {"barcode": "4901085616636", "name": {"en": "Suntory Green Tea Iyemon","ja": "伊右衛門"},             "brand": "Suntory",         "category": "Green Tea",    "imageUrl": "", "ranking": 4,  "averageRating": 4.3},
     {"barcode": "4902102113342", "name": {"en": "Aquarius",                "ja": "アクエリアス"},         "brand": "Coca-Cola Japan", "category": "Sports Drink", "imageUrl": "", "ranking": 5,  "averageRating": 4.2},

@@ -122,11 +122,22 @@ class DrinkRepositoryImpl @Inject constructor(
             .await()
     }
 
-    override suspend fun getImageUrl(barcode: String): String? {
+    override suspend fun getImageUrl(barcodeOrGsUrl: String): String? {
         return try {
-            storage.reference.child("drinks/$barcode.webp").downloadUrl.await().toString()
+            val ref = if (barcodeOrGsUrl.startsWith("gs://"))
+                storage.getReferenceFromUrl(barcodeOrGsUrl)
+            else
+                storage.reference.child("drinks/$barcodeOrGsUrl.webp")
+            // Build the public HTTPS URL directly — avoids needing an auth token
+            val bucket = storage.app.options.storageBucket ?: return null
+            val path = ref.path.trimStart('/').let {
+                java.net.URLEncoder.encode(it, "UTF-8").replace("+", "%20")
+            }
+            val url = "https://firebasestorage.googleapis.com/v0/b/$bucket/o/$path?alt=media"
+            Log.d("DrinkRepo", "Built image URL: $url")
+            url
         } catch (e: Exception) {
-            Log.w("DrinkRepo", "Storage image not found for $barcode: ${e.message}")
+            Log.w("DrinkRepo", "Failed to build image URL for $barcodeOrGsUrl: ${e.message}")
             null
         }
     }
@@ -134,6 +145,8 @@ class DrinkRepositoryImpl @Inject constructor(
     override fun getTrendingDrinks(): Flow<List<Drink>> = callbackFlow {
         Log.d("DrinkRepo", "Firebase project: ${firestore.app.options.projectId}")
         val listener = firestore.collection("drinks")
+            .whereGreaterThan("ranking", 0)
+            .orderBy("ranking", Query.Direction.ASCENDING)
             .limit(10)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -220,7 +233,7 @@ class DrinkRepositoryImpl @Inject constructor(
         logs.document(logEntryId).delete().await()
     }
 
-    suspend fun saveUser(userId: String, displayName: String, email: String) {
+    override suspend fun saveUser(userId: String, displayName: String, email: String) {
         val user = hashMapOf(
             "userId" to userId,
             "displayName" to displayName,

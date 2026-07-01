@@ -4,13 +4,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiFoodBeverage
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,7 +26,8 @@ import com.whatdrink.app.data.model.DrinkDetail
 import com.whatdrink.app.data.model.DrinkStats
 import com.whatdrink.app.ui.language.AppLanguage
 import com.whatdrink.app.ui.language.LocalAppLanguage
-import com.whatdrink.app.ui.screens.home.LanguageSelector
+import com.whatdrink.app.ui.components.BottomBar
+import com.whatdrink.app.ui.components.BottomBarTab
 import com.whatdrink.app.viewmodel.DrinkProfileUiState
 import com.whatdrink.app.viewmodel.DrinkProfileViewModel
 
@@ -37,6 +35,7 @@ import com.whatdrink.app.viewmodel.DrinkProfileViewModel
 fun DrinkProfileScreen(
     drinkId: String,
     onBack: () -> Unit,
+    onOpenMap: () -> Unit = {},
     onGoHome: () -> Unit = {},
     onOpenProfile: () -> Unit = {},
     viewModel: DrinkProfileViewModel = hiltViewModel()
@@ -76,45 +75,13 @@ fun DrinkProfileScreen(
             }
         }
 
-        LanguageSelector(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .navigationBarsPadding()
-                .padding(start = 20.dp, bottom = 20.dp)
+        BottomBar(
+            activeTab = BottomBarTab.NONE,
+            onOpenMap = onOpenMap,
+            onGoHome = onGoHome,
+            onOpenProfile = onOpenProfile,
+            modifier = Modifier.align(Alignment.BottomStart)
         )
-
-        Row(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .navigationBarsPadding()
-                .padding(end = 20.dp, bottom = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            IconButton(
-                onClick = onGoHome,
-                modifier = Modifier
-                    .background(Color.White, CircleShape)
-                    .size(52.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Home,
-                    contentDescription = "Go to home",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            IconButton(
-                onClick = onOpenProfile,
-                modifier = Modifier
-                    .background(Color.White, CircleShape)
-                    .size(52.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = "User profile",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
     }
 }
 
