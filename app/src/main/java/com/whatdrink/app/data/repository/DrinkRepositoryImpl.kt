@@ -26,14 +26,64 @@ class DrinkRepositoryImpl @Inject constructor(
     private val logs = firestore.collection("drinkLog")
 
     override suspend fun getDrinkByBarcode(barcode: String): Drink? {
-        val snapshot = firestore
-            .collection("drinks")
-            .whereEqualTo("barcode", barcode)
-            .get()
-            .await()
-        if (snapshot.isEmpty) return null
+    val detailDoc = firestore.collection("drinkDetails").document(barcode).get().await()
+    if (detailDoc.exists()) {
+        return detailDoc.toDrink()
+    }
+
+  
+    val snapshot = firestore
+        .collection("drinks")
+        .whereEqualTo("barcode", barcode)
+        .get()
+        .await()
+    if (!snapshot.isEmpty) {
         return snapshot.documents.first().toDrink()
     }
+
+  
+    val yahooResult = try {
+        com.whatdrink.app.data.remote.YahooShoppingApi.fetchByBarcode(barcode)
+    } catch (e: Exception) {
+        Log.w("DrinkRepo", "Yahoo API lookup failed for $barcode: ${e.message}")
+        null
+    } ?: return null
+
+   
+    val drinkData = hashMapOf(
+        "barcode" to yahooResult.barcode,
+        "name" to mapOf("en" to yahooResult.nameEn, "ja" to yahooResult.nameJa),
+        "brand" to yahooResult.brand,
+        "category" to yahooResult.category,
+        "imageUrl" to yahooResult.imageUrl,
+        "source" to "yahoo",
+        "description" to mapOf("en" to yahooResult.descriptionEn, "ja" to yahooResult.descriptionJa),
+        "nutrition" to mapOf(
+            "calories" to 0, "protein" to 0.0, "fat" to 0.0,
+            "carbohydrates" to 0.0, "sugar" to 0.0,
+            "sodium" to 0.0, "caffeine" to 0.0
+        )
+    )
+    firestore.collection("drinkDetails").document(barcode).set(drinkData).await()
+
+    val statsData = hashMapOf(
+        "barcode" to barcode,
+        "views" to 0,
+        "averageRating" to 0.0,
+        "commentCount" to 0
+    )
+    firestore.collection("drinkStats").document(barcode).set(statsData).await()
+
+    return Drink(
+    id = barcode,
+    barcode = barcode,
+    name = mapOf("en" to yahooResult.nameEn, "ja" to yahooResult.nameJa),
+    brand = yahooResult.brand,
+    imageUrl = yahooResult.imageUrl,
+    category = yahooResult.category,
+    description = mapOf("en" to yahooResult.descriptionEn, "ja" to yahooResult.descriptionJa)
+)
+}
 
     override suspend fun getDrinkById(id: String): Drink? {
         return firestore.collection("drinks").document(id).get().await().toDrink()
