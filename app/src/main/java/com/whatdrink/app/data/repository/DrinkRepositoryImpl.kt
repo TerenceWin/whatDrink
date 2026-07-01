@@ -15,6 +15,8 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import org.json.JSONObject
+import java.net.URL
 import javax.inject.Inject
 
 class DrinkRepositoryImpl @Inject constructor(
@@ -22,21 +24,84 @@ class DrinkRepositoryImpl @Inject constructor(
     private val storage: FirebaseStorage
 ) : DrinkRepository {
 
+    private val drinkDetails = firestore.collection("drinkDetails")
     private val reviews = firestore.collection("reviews")
     private val logs = firestore.collection("drinkLog")
 
+    private val YAHOO_APP_ID = "dmVyPTIwMjUwNyZpZD1BNEsyblFOQk11Jmhhc2g9WkRJeFlXSTVaRGswTTJZd1ptVmlZdw"
+
     override suspend fun getDrinkByBarcode(barcode: String): Drink? {
-        val snapshot = firestore
-            .collection("drinks")
+        // 1. 先查 Firestore
+        val snapshot = drinkDetails
             .whereEqualTo("barcode", barcode)
             .get()
             .await()
-        if (snapshot.isEmpty) return null
-        return snapshot.documents.first().toDrink()
+        if (!snapshot.isEmpty) {
+            return snapshot.documents.first().toDrink()
+        }
+
+        // 2. 没有 → 查 Yahoo API
+        val drink = fetchFromYahoo(barcode)
+        if (drink != null) {
+            drinkDetails.document(barcode).set(drinkToMap(drink)).await()
+            return drink
+        }
+
+        // 3. 还是没有 → 返回 null
+        return null
+    }
+
+    private suspend fun fetchFromYahoo(barcode: String): Drink? {
+        return try {
+            val url = "https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=$YAHOO_APP_ID&jan_code=$barcode&results=1"
+            val response = URL(url).readText()
+            val json = JSONObject(response)
+            val hits = json.getJSONArray("hits")
+            if (hits.length() == 0) return null
+
+            val item = hits.getJSONObject(0)
+            val name = item.getString("name")
+            val brand = if (item.has("brand")) item.getJSONObject("brand").getString("name") else ""
+            val category = if (item.has("genreCategory")) item.getJSONObject("genreCategory").getString("name") else ""
+            val imageUrl = if (item.has("image")) item.getJSONObject("image").getString("medium") else ""
+            val description = if (item.has("description")) item.getString("description") else ""
+
+            Drink(
+                id = barcode,
+                barcode = barcode,
+                name = mapOf("ja" to name, "en" to name),
+                brand = brand,
+                imageUrl = imageUrl,
+                category = category,
+                description = mapOf("ja" to description, "en" to description),
+                averageRating = 0.0,
+                views = 0,
+                commentCount = 0,
+                ranking = 0
+            )
+        } catch (e: Exception) {
+            Log.e("DrinkRepo", "Yahoo API error: ${e.message}")
+            null
+        }
+    }
+
+    private fun drinkToMap(drink: Drink): Map<String, Any> {
+        return mapOf(
+            "barcode" to drink.barcode,
+            "name" to drink.name,
+            "brand" to drink.brand,
+            "imageUrl" to drink.imageUrl,
+            "category" to drink.category,
+            "description" to drink.description,
+            "averageRating" to drink.averageRating,
+            "views" to drink.views,
+            "commentCount" to drink.commentCount,
+            "ranking" to drink.ranking
+        )
     }
 
     override suspend fun getDrinkById(id: String): Drink? {
-        return firestore.collection("drinks").document(id).get().await().toDrink()
+        return drinkDetails.document(id).get().await().toDrink()
     }
 
     override suspend fun getDrinkDetail(id: String): DrinkDetail? {
@@ -68,7 +133,6 @@ class DrinkRepositoryImpl @Inject constructor(
 
     override fun getTrendingDrinks(): Flow<List<Drink>> = callbackFlow {
         Log.d("DrinkRepo", "Firebase project: ${firestore.app.options.projectId}")
-        Log.d("DrinkRepo", "Setting up Firestore listener")
         val listener = firestore.collection("drinks")
             .limit(10)
             .addSnapshotListener { snapshot, error ->
@@ -77,27 +141,19 @@ class DrinkRepositoryImpl @Inject constructor(
                     close(error)
                     return@addSnapshotListener
                 }
-                Log.d("DrinkRepo", "Snapshot: ${snapshot?.size()} docs, fromCache=${snapshot?.metadata?.isFromCache}")
                 if (snapshot?.metadata?.isFromCache == true && snapshot.isEmpty) {
-                    Log.w("DrinkRepo", "Cache empty — waiting for server response")
                     return@addSnapshotListener
                 }
                 val drinks = snapshot?.documents?.mapNotNull { doc ->
-                    try {
-                        doc.toDrink().also { Log.d("DrinkRepo", "Parsed: ${it.id} name=${it.name}") }
-                    } catch (e: Exception) {
-                        Log.e("DrinkRepo", "Failed to parse doc ${doc.id}: ${e.message}", e)
-                        null
-                    }
+                    try { doc.toDrink() } catch (e: Exception) { null }
                 } ?: emptyList()
-                Log.d("DrinkRepo", "Sending ${drinks.size} drinks to flow")
                 trySend(drinks.sortedBy { it.ranking })
             }
         awaitClose { listener.remove() }
     }
 
     override fun getNewReleaseDrinks(): Flow<List<Drink>> = callbackFlow {
-        val listener = firestore.collection("drinks")
+        val listener = drinkDetails
             .orderBy("ranking", Query.Direction.ASCENDING)
             .limit(20)
             .addSnapshotListener { snapshot, _ ->
@@ -107,7 +163,7 @@ class DrinkRepositoryImpl @Inject constructor(
     }
 
     override suspend fun searchDrinks(query: String): List<Drink> {
-        val snapshot = firestore.collection("drinks").get().await()
+        val snapshot = drinkDetails.get().await()
         val q = query.trim().lowercase()
         return snapshot.documents.mapNotNull { it.toDrink() }.filter { drink ->
             drink.name.values.any { it.lowercase().contains(q) } ||
@@ -118,7 +174,7 @@ class DrinkRepositoryImpl @Inject constructor(
     override fun getReviewsForDrink(drinkId: String): Flow<List<Review>> = callbackFlow {
         val listener = reviews
             .whereEqualTo("drinkId", drinkId)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, _ ->
                 trySend(snapshot?.toObjects(Review::class.java) ?: emptyList())
             }
@@ -127,7 +183,7 @@ class DrinkRepositoryImpl @Inject constructor(
 
     override suspend fun submitReview(review: Review) {
         reviews.add(review).await()
-        val drinkRef = firestore.collection("drinks").document(review.drinkId)
+        val drinkRef = drinkDetails.document(review.drinkId)
         firestore.runTransaction { transaction ->
             val drink = transaction.get(drinkRef).toDrink()
             val newCount = drink.commentCount + 1
@@ -142,7 +198,7 @@ class DrinkRepositoryImpl @Inject constructor(
     override fun getLogForUser(userId: String): Flow<List<LogEntry>> = callbackFlow {
         val listener = logs
             .whereEqualTo("userId", userId)
-            .orderBy("scannedAt", Query.Direction.DESCENDING)
+            .orderBy("timestamp", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, _ ->
                 trySend(snapshot?.toObjects(LogEntry::class.java) ?: emptyList())
             }
@@ -153,11 +209,11 @@ class DrinkRepositoryImpl @Inject constructor(
         val log = hashMapOf(
             "userId" to userId,
             "drinkId" to drinkId,
-            "scannedAt" to com.google.firebase.Timestamp.now()
+            "timestamp" to System.currentTimeMillis()
         )
         logs.add(log).await()
-        firestore.collection("drinks").document(drinkId)
-            .update("views", FieldValue.increment(1)).await()
+        drinkDetails.document(drinkId)
+            .update("views", com.google.firebase.firestore.FieldValue.increment(1)).await()
     }
 
     override suspend fun removeFromLog(logEntryId: String) {
