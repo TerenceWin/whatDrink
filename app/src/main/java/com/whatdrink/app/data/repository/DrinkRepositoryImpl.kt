@@ -198,7 +198,7 @@ class DrinkRepositoryImpl @Inject constructor(
         awaitClose { listener.remove() }
     }
 
-    override suspend fun submitReview(review: Review) {
+    override suspend fun dReview(review: Review) {
         reviews.add(review).await()
         val drinkRef = drinkDetails.document(review.drinkId)
         firestore.runTransaction { transaction ->
@@ -209,7 +209,7 @@ class DrinkRepositoryImpl @Inject constructor(
                 "averageRating" to newAvg,
                 "commentCount" to newCount
             ))
-        }.await()
+        }.await
     }
 
     override fun getLogForUser(userId: String): Flow<List<LogEntry>> = callbackFlow {
@@ -366,6 +366,106 @@ class DrinkRepositoryImpl @Inject constructor(
         )
         firestore.collection("users").document(userId).set(user).await()
     }
+    override suspend fun getDrinkDetail(id: String): DrinkDetail? {
+    val doc = firestore.collection("drinkDetails").document(id).get().await()
+    if (!doc.exists()) return null
+    return DrinkDetail(
+        id = doc.id,
+        name = doc.get("name") as? Map<String, String> ?: emptyMap(),
+        nutrition = doc.get("nutrition") as? Map<String, Any> ?: emptyMap()
+    )
+}
+
+override suspend fun getDrinkStats(id: String): DrinkStats? {
+    val doc = firestore.collection("drinkStats").document(id).get().await()
+    if (!doc.exists()) return null
+    return DrinkStats(
+        id = doc.id,
+        averageRating = (doc.get("averageRating") as? Number)?.toDouble() ?: 0.0,
+        views = doc.getLong("views")?.toInt() ?: 0,
+        ranking = doc.getLong("ranking")?.toInt() ?: 0,
+        commentCount = doc.getLong("commentCount")?.toInt() ?: 0
+    )
+}
+
+override suspend fun incrementViews(id: String) {
+    firestore.collection("drinkStats").document(id)
+        .update("views", com.google.firebase.firestore.FieldValue.increment(1)).await()
+}
+
+override suspend fun getImageUrl(barcodeOrGsUrl: String): String? {
+    return try {
+        val ref = storage.getReferenceFromUrl(barcodeOrGsUrl)
+        ref.downloadUrl.await().toString()
+    } catch (e: Exception) {
+        null
+    }
+}
+
+override suspend fun getUser(userId: String): User? {
+    val doc = firestore.collection("users").document(userId).get().await()
+    if (!doc.exists()) return null
+    return User(
+        id = doc.id,
+        username = doc.getString("username") ?: "",
+        email = doc.getString("email") ?: "",
+        memberSince = doc.getTimestamp("memberSince"),
+        reviewsCount = doc.getLong("reviewsCount")?.toInt() ?: 0,
+        ratingCount = doc.getLong("ratingCount")?.toInt() ?: 0,
+        profileImage = doc.getString("profileImage") ?: ""
+    )
+}
+
+override suspend fun updateUsername(userId: String, newUsername: String) {
+    firestore.collection("users").document(userId)
+        .update("username", newUsername).await()
+}
+
+override fun getComments(drinkId: String): Flow<List<Comment>> = callbackFlow {
+    val listener = firestore.collection("comments")
+        .whereEqualTo("drinkId", drinkId)
+        .orderBy("createdAt", Query.Direction.DESCENDING)
+        .addSnapshotListener { snapshot, _ ->
+            val comments = snapshot?.documents?.mapNotNull { doc ->
+                Comment(
+                    commentId = doc.id,
+                    userId = doc.getString("userId") ?: "",
+                    username = doc.getString("username") ?: "",
+                    context = doc.getString("context") ?: "",
+                    createdAt = doc.getTimestamp("createdAt")
+                )
+            } ?: emptyList()
+            trySend(comments)
+        }
+    awaitClose { listener.remove() }
+}
+
+override suspend fun addComment(drinkId: String, userId: String, username: String, context: String) {
+    val comment = hashMapOf(
+        "drinkId" to drinkId,
+        "userId" to userId,
+        "username" to username,
+        "context" to context,
+        "createdAt" to com.google.firebase.Timestamp.now()
+    )
+    firestore.collection("comments").add(comment).await()
+    firestore.collection("drinkStats").document(drinkId)
+        .update("commentCount", com.google.firebase.firestore.FieldValue.increment(1)).await()
+}
+
+override suspend fun getProfileImages(): List<String> {
+    return try {
+        val listResult = storage.reference.child("profile_images").listAll().await()
+        listResult.items.map { it.downloadUrl.await().toString() }
+    } catch (e: Exception) {
+        emptyList()
+    }
+}
+
+override suspend fun updateProfileImage(userId: String, gsUrl: String) {
+    firestore.collection("users").document(userId)
+        .update("profileImage", gsUrl).await()
+}
     suspend fun getReviewsByUser(userId: String): List<Review> {
     return reviews
         .whereEqualTo("userId", userId)
