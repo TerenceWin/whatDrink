@@ -33,5 +33,7 @@ interface DrinkRepository {
     suspend fun addComment(drinkId: String, userId: String, username: String, context: String)
     suspend fun getProfileImages(): List<String>
     suspend fun updateProfileImage(userId: String, gsUrl: String)
+    fun getCommentsByUser(userId: String): Flow<List<Comment>>
+    suspend fun getRatingsByUser(userId: String): List<Review>
 }
 
